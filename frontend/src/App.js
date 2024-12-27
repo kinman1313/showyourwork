@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
@@ -12,6 +12,8 @@ import RequestReset from './components/RequestReset';
 
 import ResetPassword from './components/ResetPassword';
 
+import TestEnv from './components/TestEnv';
+
 import './App.css';
 
 
@@ -21,6 +23,22 @@ function App() {
     const [token, setToken] = useState(localStorage.getItem('token'));
 
     const [userId, setUserId] = useState(localStorage.getItem('userId'));
+
+
+
+    useEffect(() => {
+
+        if (!token) {
+
+            // Redirect to auth if no token
+
+            // You can uncomment this if you want this behavior
+
+            // window.location.href = '/auth';
+
+        }
+
+    }, [token]);
 
 
 
@@ -43,6 +61,8 @@ function App() {
                     <Route path="/reset-password" element={<ResetPassword />} />
 
                 </Routes>
+
+                <TestEnv />
 
             </div>
 

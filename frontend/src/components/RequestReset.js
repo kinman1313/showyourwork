@@ -12,6 +12,8 @@ const RequestReset = () => {
 
     const [message, setMessage] = useState('');
 
+    const [error, setError] = useState('');
+
     const navigate = useNavigate();
 
 
@@ -22,13 +24,15 @@ const RequestReset = () => {
 
         try {
 
-            await axios.post('http://localhost:5000/api/auth/request-reset', { email });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/request-reset`, { email });
 
-            setMessage('Reset email sent. Check your inbox.');
+            setMessage(response.data.message);
+
+            setTimeout(() => navigate('/auth'), 3000);
 
         } catch (err) {
 
-            setMessage(err.response?.data?.error || 'Something went wrong');
+            setError(err.response?.data?.error || 'Failed to send reset email');
 
         }
 

@@ -421,3 +421,47 @@ li button:hover {
     font-size: 1.5rem;
 
 }
+
+
+
+.chores-list {
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.chore-item {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn 0.5s ease;
+}
+
+.chore-item span {
+    flex: 1;
+    text-align: left;
+    margin-right: 10px;
+    padding: 0 10px;
+}
+
+.chore-item.completed {
+    opacity: 0.7;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Add space between the logout and admin buttons */
+.home-page button {
+    margin: 0 10px;
+}
+
+/* Style the admin button differently */
+.home-page a button {
+    background-color: #4CAF50;
+}
+
+.home-page a button:hover {
+    background-color: #45a049;
+}

@@ -1,140 +1,76 @@
-frontend / src / components / HomePage.js
-
-
-
-import React, { useState } from 'react';
-
-import axios from 'axios';
-
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-
+import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 const HomePage = () => {
-
-    const [username, setUsername] = useState('');
-
-    const [password, setPassword] = useState('');
-
-    const [isParent, setIsParent] = useState(false);
-
-    const [error, setError] = useState('');
-
     const navigate = useNavigate();
+    const [chores, setChores] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const token = localStorage.getItem('token');
 
-
-
-    const handleRegister = async (e) => {
-
-        e.preventDefault();
-
-        try {
-
-            const response = await axios.post('http://localhost:5000/api/auth/register', {
-
-                username,
-
-                password,
-
-                isParent,
-
-            });
-
-            if (response.data.message) {
-
-                alert('Registration successful! Please log in.');
-
-                navigate('/auth');
-
-            }
-
-        } catch (err) {
-
-            setError(err.response?.data?.error || 'Registration failed');
-
+    useEffect(() => {
+        if (!token) {
+            navigate('/auth');
+            return;
         }
 
+        const fetchChores = async () => {
+            try {
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/chores`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setChores(response.data);
+                setLoading(false);
+            } catch (err) {
+                setError(err.message);
+                setLoading(false);
+            }
+        };
+
+        fetchChores();
+    }, [token, navigate]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        navigate('/auth');
     };
 
+    if (loading) {
+        return (
+            <div className="spinner-container">
+                <div className="spinner"></div>
+            </div>
+        );
+    }
 
+    if (error) {
+        return <div className="error">Error: {error}</div>;
+    }
 
     return (
-
         <div className="home-page">
+            <h1>Chore Tracker</h1>
+            <button onClick={handleLogout}>Logout</button>
 
-            <h1>Welcome to Chore Tracker</h1>
-
-            <div className="registration-form">
-
-                <h2>Register</h2>
-
-                {error && <p className="error">{error}</p>}
-
-                <form onSubmit={handleRegister}>
-
-                    <input
-
-                        type="text"
-
-                        placeholder="Username"
-
-                        value={username}
-
-                        onChange={(e) => setUsername(e.target.value)}
-
-                        required
-
-                    />
-
-                    <input
-
-                        type="password"
-
-                        placeholder="Password"
-
-                        value={password}
-
-                        onChange={(e) => setPassword(e.target.value)}
-
-                        required
-
-                    />
-
-                    <label>
-
-                        <input
-
-                            type="checkbox"
-
-                            checked={isParent}
-
-                            onChange={(e) => setIsParent(e.target.checked)}
-
-                        />
-
-                        Register as a parent
-
-                    </label>
-
-                    <button type="submit">Register</button>
-
-                </form>
-
-                <p>
-
-                    Already have an account? <a href="/auth">Log in here</a>.
-
-                </p>
-
+            <div className="chores-list">
+                {chores.map(chore => (
+                    <div key={chore._id} className={`chore-item ${chore.completed ? 'completed' : ''}`}>
+                        <span>{chore.name}</span>
+                        <span>{chore.assignedTo}</span>
+                        <span>{new Date(chore.dueDate).toLocaleDateString()}</span>
+                    </div>
+                ))}
             </div>
 
+            <Link to="/admin">
+                <button>Admin Panel</button>
+            </Link>
         </div>
-
     );
-
 };
-
-
 
 export default HomePage;
 
