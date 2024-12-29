@@ -6,13 +6,22 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
+
+// Test endpoint for health check
+app.get('/test-env', (req, res) => {
+    res.json({
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // CORS configuration
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://chore-tracker-frontend.onrender.com']
+        ? [process.env.FRONTEND_URL]
         : ['http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -21,6 +30,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to ShowYourWork API' });
+});
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
@@ -259,17 +273,15 @@ app.patch('/chores/:id/status', auth, async (req, res) => {
     }
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'frontend/build')));
-
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
-    });
-}
+// Remove the static file serving section and replace with a catch-all route
+app.get('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
 }); 
