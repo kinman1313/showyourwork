@@ -6,16 +6,10 @@ import {
     CardContent,
     Typography,
     Button,
-    IconButton,
     Alert,
-    CircularProgress,
 } from '@mui/material';
-import {
-    CheckCircle as CheckCircleIcon,
-    PendingActions as PendingIcon,
-    EmojiEvents as TrophyIcon,
-} from '@mui/icons-material';
-import axios from 'axios';
+import { Check as CheckIcon } from '@mui/icons-material';
+import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function ChildDashboard() {
@@ -29,16 +23,14 @@ export default function ChildDashboard() {
         const fetchData = async () => {
             try {
                 const [choresRes, pointsRes] = await Promise.all([
-                    axios.get(`${process.env.REACT_APP_API_URL}/chores`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    }),
-                    axios.get(`${process.env.REACT_APP_API_URL}/users/points`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    }),
+                    api.get('/chores/assigned'),
+                    api.get('/users/points')
                 ]);
                 setChores(choresRes.data);
                 setTotalPoints(pointsRes.data.points);
+                setError('');
             } catch (err) {
+                console.error('Dashboard fetch error:', err);
                 setError('Failed to fetch dashboard data');
             } finally {
                 setLoading(false);
@@ -49,134 +41,79 @@ export default function ChildDashboard() {
 
     const handleCompleteChore = async (choreId) => {
         try {
-            const response = await axios.patch(
-                `${process.env.REACT_APP_API_URL}/chores/${choreId}/status`,
-                { status: 'completed' },
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                }
-            );
+            const response = await api.patch(`/chores/${choreId}/complete`);
             setChores(
                 chores.map((chore) =>
                     chore._id === choreId ? { ...chore, status: 'completed' } : chore
                 )
             );
+            setTotalPoints(response.data.totalPoints);
+            setError('');
         } catch (err) {
+            console.error('Complete chore error:', err);
             setError('Failed to complete chore');
         }
     };
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <CircularProgress />
+            <Box sx={{ p: 3 }}>
+                <Typography>Loading...</Typography>
             </Box>
         );
     }
 
     return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4" component="h1">
-                    My Dashboard
-                </Typography>
-                <Card sx={{ minWidth: 200, bgcolor: 'primary.dark' }}>
-                    <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <TrophyIcon sx={{ mr: 1, color: 'gold' }} />
-                            <Typography variant="h6" component="div" color="white">
-                                Total Points: {totalPoints}
-                            </Typography>
-                        </Box>
-                    </CardContent>
-                </Card>
-            </Box>
-
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom>
+                My Chores
+            </Typography>
             {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
                 </Alert>
             )}
-
+            <Typography variant="h6" gutterBottom>
+                Total Points: {totalPoints}
+            </Typography>
             <Grid container spacing={3}>
-                {/* Active Chores */}
-                <Grid item xs={12} md={6}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                My Active Chores
-                            </Typography>
-                            {chores
-                                .filter((chore) => chore.status === 'pending')
-                                .map((chore) => (
-                                    <Card key={chore._id} sx={{ mb: 2, bgcolor: 'background.paper' }}>
-                                        <CardContent>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Typography variant="subtitle1">{chore.title}</Typography>
-                                                <IconButton
-                                                    color="primary"
-                                                    onClick={() => handleCompleteChore(chore._id)}
-                                                >
-                                                    <CheckCircleIcon />
-                                                </IconButton>
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {chore.description}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                                <TrophyIcon sx={{ mr: 1, color: 'gold', fontSize: '1rem' }} />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Points: {chore.points}
-                                                </Typography>
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Due: {new Date(chore.dueDate).toLocaleDateString()}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Completed Chores */}
-                <Grid item xs={12} md={6}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Completed Chores
-                            </Typography>
-                            {chores
-                                .filter((chore) => chore.status === 'completed' || chore.status === 'verified')
-                                .map((chore) => (
-                                    <Card key={chore._id} sx={{ mb: 2, bgcolor: 'background.paper' }}>
-                                        <CardContent>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Typography variant="subtitle1">{chore.title}</Typography>
-                                                {chore.status === 'verified' ? (
-                                                    <CheckCircleIcon color="success" />
-                                                ) : (
-                                                    <PendingIcon color="warning" />
-                                                )}
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {chore.description}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                                <TrophyIcon sx={{ mr: 1, color: 'gold', fontSize: '1rem' }} />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Points: {chore.points}
-                                                </Typography>
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Completed: {new Date(chore.completedDate).toLocaleDateString()}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                        </CardContent>
-                    </Card>
-                </Grid>
+                {chores.map((chore) => (
+                    <Grid item xs={12} sm={6} md={4} key={chore._id}>
+                        <Card>
+                            <CardContent>
+                                <Typography variant="h6">{chore.title}</Typography>
+                                <Typography color="textSecondary">
+                                    Points: {chore.points}
+                                </Typography>
+                                <Typography>{chore.description}</Typography>
+                                <Typography color="textSecondary">
+                                    Due: {new Date(chore.dueDate).toLocaleDateString()}
+                                </Typography>
+                                {chore.status === 'assigned' && (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        startIcon={<CheckIcon />}
+                                        onClick={() => handleCompleteChore(chore._id)}
+                                        sx={{ mt: 1 }}
+                                    >
+                                        Mark Complete
+                                    </Button>
+                                )}
+                                {chore.status === 'completed' && (
+                                    <Typography color="success.main" sx={{ mt: 1 }}>
+                                        Completed - Waiting for verification
+                                    </Typography>
+                                )}
+                                {chore.status === 'verified' && (
+                                    <Typography color="success.main" sx={{ mt: 1 }}>
+                                        Verified
+                                    </Typography>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
             </Grid>
         </Box>
     );
