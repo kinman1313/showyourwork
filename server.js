@@ -385,31 +385,44 @@ app.patch('/chores/:id/complete', auth, async (req, res) => {
 
 app.patch('/chores/:id/status', auth, async (req, res) => {
     try {
-        if (req.user.role !== 'parent') {
-            return res.status(403).json({ error: 'Only parents can verify chores' });
-        }
-
         const { status } = req.body;
-        if (status !== 'verified') {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
+        const validTransitions = {
+            'pending': ['in_progress'],
+            'in_progress': ['completed'],
+            'completed': ['verified']
+        };
 
-        const chore = await Chore.findOne({
-            _id: req.params.id,
-            assignedBy: req.user._id
-        });
+        const chore = await Chore.findById(req.params.id);
         if (!chore) {
             return res.status(404).json({ error: 'Chore not found' });
         }
 
-        if (chore.status !== 'completed') {
-            return res.status(400).json({ error: 'Chore must be completed first' });
+        // Check if user has permission to update status
+        if (req.user.role === 'child') {
+            if (chore.assignedTo.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ error: 'Not authorized to update this chore' });
+            }
+            if (!validTransitions[chore.status]?.includes(status)) {
+                return res.status(400).json({ error: 'Invalid status transition' });
+            }
+        } else if (req.user.role === 'parent') {
+            if (chore.assignedBy.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ error: 'Not authorized to update this chore' });
+            }
+            if (status !== 'verified' || chore.status !== 'completed') {
+                return res.status(400).json({ error: 'Parents can only verify completed chores' });
+            }
         }
 
         chore.status = status;
+        if (status === 'completed') {
+            chore.completedDate = new Date();
+        }
         await chore.save();
+
         res.json(chore);
     } catch (error) {
+        console.error('Status update error:', error);
         res.status(400).json({ error: error.message });
     }
 });
