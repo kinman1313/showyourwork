@@ -4,6 +4,10 @@
     "private": true,
     "dependencies": {
         "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+        "@emotion/react": "^11.11.1",
+        "@emotion/styled": "^11.11.0",
+        "@mui/material": "^5.14.20",
+        "@mui/icons-material": "^5.14.20",
         "@testing-library/jest-dom": "^5.x.x",
         "@testing-library/react": "^13.x.x",
         "@testing-library/user-event": "^13.x.x",
