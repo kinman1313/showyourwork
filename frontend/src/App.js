@@ -21,8 +21,11 @@ import Layout from './components/layout/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-    const { isAuthenticated } = useAuth();
-    return isAuthenticated ? children : <Navigate to="/login" />;
+    const { isAuthenticated, user } = useAuth();
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
+    return children;
 };
 
 const RoleBasedRoute = ({ children, allowedRole }) => {
@@ -31,6 +34,16 @@ const RoleBasedRoute = ({ children, allowedRole }) => {
         return <Navigate to="/" />;
     }
     return children;
+};
+
+const DefaultRoute = () => {
+    const { isAuthenticated, user } = useAuth();
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
+
+    return <Navigate to={user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard'} />;
 };
 
 function App() {
@@ -70,22 +83,10 @@ function App() {
                             />
 
                             {/* Default Route */}
-                            <Route
-                                path="/"
-                                element={
-                                    <PrivateRoute>
-                                        {({ user }) => (
-                                            <Navigate
-                                                to={
-                                                    user?.role === 'parent'
-                                                        ? '/parent-dashboard'
-                                                        : '/child-dashboard'
-                                                }
-                                            />
-                                        )}
-                                    </PrivateRoute>
-                                }
-                            />
+                            <Route path="/" element={<DefaultRoute />} />
+
+                            {/* Catch-all Route */}
+                            <Route path="*" element={<DefaultRoute />} />
                         </Routes>
                     </Layout>
                 </Router>
