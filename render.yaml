@@ -20,11 +20,10 @@ services:
     healthCheckPath: /test-env
     autoDeploy: true
 
-  - type: web
+  - type: static
     name: showyourwork-frontend
-    env: static
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/build
+    publishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
         sync: false
