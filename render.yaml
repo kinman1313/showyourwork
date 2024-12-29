@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: chore-tracker-backend
+    name: showyourwork-backend
     env: node
     buildCommand: npm install
     startCommand: node server.js
@@ -17,9 +17,11 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+    healthCheckPath: /test-env
+    autoDeploy: true
 
   - type: web
-    name: chore-tracker-frontend
+    name: showyourwork-frontend
     env: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/build
@@ -27,4 +29,9 @@ services:
       - key: REACT_APP_API_URL
         sync: false
       - key: NODE_ENV
-        value: production 
+        value: production
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true 
