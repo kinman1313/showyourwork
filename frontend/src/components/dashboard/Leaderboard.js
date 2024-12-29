@@ -12,6 +12,7 @@ import {
     Chip,
     Tooltip,
     LinearProgress,
+    Alert,
 } from '@mui/material';
 import {
     EmojiEvents as TrophyIcon,
@@ -23,7 +24,7 @@ import api from '../../api';
 export default function Leaderboard() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [leaderboardData, setLeaderboardData] = useState([]);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         fetchLeaderboard();
@@ -33,6 +34,7 @@ export default function Leaderboard() {
         try {
             const response = await api.get('/users/leaderboard');
             setUsers(response.data);
+            setError('');
             setLoading(false);
         } catch (err) {
             setError('Failed to fetch leaderboard');
@@ -74,6 +76,12 @@ export default function Leaderboard() {
                 </Typography>
                 <TrophyIcon sx={{ color: '#FFD700', fontSize: 40 }} />
             </Box>
+
+            {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                </Alert>
+            )}
 
             <Card sx={{
                 background: 'rgba(255, 255, 255, 0.1)',
