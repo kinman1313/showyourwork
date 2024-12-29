@@ -13,6 +13,7 @@ import {
     Toolbar,
     Typography,
     Button,
+    Divider,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -20,6 +21,7 @@ import {
     Assignment,
     ExitToApp,
     Person,
+    Forum as ForumIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -40,7 +42,7 @@ export default function Layout({ children }) {
         navigate('/login');
     };
 
-    const menuItems = user?.role === 'parent'
+    const dashboardItems = user?.role === 'parent'
         ? [
             { text: 'Dashboard', icon: <Dashboard />, path: '/parent-dashboard' },
             { text: 'Manage Chores', icon: <Assignment />, path: '/parent-dashboard/chores' },
@@ -50,6 +52,10 @@ export default function Layout({ children }) {
             { text: 'My Chores', icon: <Assignment />, path: '/child-dashboard/chores' },
         ];
 
+    const communityItems = [
+        { text: 'Forums', icon: <ForumIcon />, path: '/forums' },
+    ];
+
     const drawer = (
         <div>
             <Toolbar>
@@ -58,12 +64,26 @@ export default function Layout({ children }) {
                 </Typography>
             </Toolbar>
             <List>
-                {menuItems.map((item) => (
+                {dashboardItems.map((item) => (
                     <ListItem
                         button
                         key={item.text}
                         onClick={() => navigate(item.path)}
                         selected={location.pathname === item.path}
+                    >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText primary={item.text} />
+                    </ListItem>
+                ))}
+            </List>
+            <Divider />
+            <List>
+                {communityItems.map((item) => (
+                    <ListItem
+                        button
+                        key={item.text}
+                        onClick={() => navigate(item.path)}
+                        selected={location.pathname.startsWith(item.path)}
                     >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText primary={item.text} />
@@ -85,6 +105,8 @@ export default function Layout({ children }) {
                 sx={{
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
                     ml: { sm: `${drawerWidth}px` },
+                    background: 'rgba(18, 18, 18, 0.95)',
+                    backdropFilter: 'blur(10px)',
                 }}
             >
                 <Toolbar>
@@ -98,7 +120,11 @@ export default function Layout({ children }) {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        {user?.role === 'parent' ? 'Parent Dashboard' : 'Child Dashboard'}
+                        {location.pathname.startsWith('/forums')
+                            ? 'Community Forums'
+                            : user?.role === 'parent'
+                                ? 'Parent Dashboard'
+                                : 'Child Dashboard'}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Person sx={{ mr: 1 }} />
@@ -127,6 +153,8 @@ export default function Layout({ children }) {
                         '& .MuiDrawer-paper': {
                             boxSizing: 'border-box',
                             width: drawerWidth,
+                            background: 'rgba(18, 18, 18, 0.95)',
+                            backdropFilter: 'blur(10px)',
                         },
                     }}
                 >
@@ -139,6 +167,8 @@ export default function Layout({ children }) {
                         '& .MuiDrawer-paper': {
                             boxSizing: 'border-box',
                             width: drawerWidth,
+                            background: 'rgba(18, 18, 18, 0.95)',
+                            backdropFilter: 'blur(10px)',
                         },
                     }}
                     open

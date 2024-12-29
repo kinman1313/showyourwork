@@ -14,6 +14,11 @@ import ResetPassword from './components/auth/ResetPassword';
 import ParentDashboard from './components/dashboard/ParentDashboard';
 import ChildDashboard from './components/dashboard/ChildDashboard';
 
+// Forum Components
+import ForumList from './components/forum/ForumList';
+import ForumView from './components/forum/ForumView';
+import TopicView from './components/forum/TopicView';
+
 // Layout Components
 import Layout from './components/layout/Layout';
 
@@ -78,6 +83,32 @@ function App() {
                                         <RoleBasedRoute allowedRole="child">
                                             <ChildDashboard />
                                         </RoleBasedRoute>
+                                    </PrivateRoute>
+                                }
+                            />
+
+                            {/* Forum Routes */}
+                            <Route
+                                path="/forums"
+                                element={
+                                    <PrivateRoute>
+                                        <ForumList />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/forums/:forumId"
+                                element={
+                                    <PrivateRoute>
+                                        <ForumView />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/topics/:topicId"
+                                element={
+                                    <PrivateRoute>
+                                        <TopicView />
                                     </PrivateRoute>
                                 }
                             />

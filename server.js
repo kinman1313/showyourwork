@@ -94,6 +94,45 @@ const choreSchema = new mongoose.Schema({
 
 const Chore = mongoose.model('Chore', choreSchema);
 
+// Forum Schema
+const forumSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    description: String,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    createdAt: { type: Date, default: Date.now },
+    isPrivate: { type: Boolean, default: false },
+    allowedRoles: [{ type: String, enum: ['parent', 'child'] }]
+});
+
+// Topic Schema
+const topicSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    forum: { type: mongoose.Schema.Types.ObjectId, ref: 'Forum', required: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    isPinned: { type: Boolean, default: false },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    tags: [String]
+});
+
+// Comment Schema
+const commentSchema = new mongoose.Schema({
+    content: { type: String, required: true },
+    topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic', required: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    parentComment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+});
+
+const Forum = mongoose.model('Forum', forumSchema);
+const Topic = mongoose.model('Topic', topicSchema);
+const Comment = mongoose.model('Comment', commentSchema);
+
 // Authentication Middleware
 const auth = async (req, res, next) => {
     try {
@@ -452,6 +491,268 @@ app.get('/users/points', auth, async (req, res) => {
         const points = completedChores.reduce((sum, chore) => sum + chore.points, 0);
 
         res.json({ points });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Update a chore
+app.put('/chores/:id', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, points, assignedTo, dueDate } = req.body;
+
+        // Verify the user is a parent
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can update chores' });
+        }
+
+        const updatedChore = await Chore.findByIdAndUpdate(
+            id,
+            {
+                title,
+                description,
+                points,
+                assignedTo,
+                dueDate: new Date(dueDate)
+            },
+            { new: true }
+        ).populate('assignedTo');
+
+        if (!updatedChore) {
+            return res.status(404).json({ error: 'Chore not found' });
+        }
+
+        res.json(updatedChore);
+    } catch (error) {
+        console.error('Update chore error:', error);
+        res.status(500).json({ error: 'Failed to update chore' });
+    }
+});
+
+// Delete a chore
+app.delete('/chores/:id', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify the user is a parent
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can delete chores' });
+        }
+
+        const deletedChore = await Chore.findByIdAndDelete(id);
+
+        if (!deletedChore) {
+            return res.status(404).json({ error: 'Chore not found' });
+        }
+
+        res.json({ message: 'Chore deleted successfully' });
+    } catch (error) {
+        console.error('Delete chore error:', error);
+        res.status(500).json({ error: 'Failed to delete chore' });
+    }
+});
+
+// Forum Routes
+app.post('/forums', auth, async (req, res) => {
+    try {
+        const { name, description, isPrivate, allowedRoles } = req.body;
+
+        // Only parents can create forums
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can create forums' });
+        }
+
+        const forum = new Forum({
+            name,
+            description,
+            createdBy: req.user._id,
+            moderators: [req.user._id],
+            isPrivate,
+            allowedRoles
+        });
+
+        await forum.save();
+        res.status(201).json(forum);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/forums', auth, async (req, res) => {
+    try {
+        const forums = await Forum.find({
+            $or: [
+                { isPrivate: false },
+                { moderators: req.user._id },
+                { allowedRoles: req.user.role }
+            ]
+        }).populate('createdBy', 'name').populate('moderators', 'name');
+        res.json(forums);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Topic Routes
+app.post('/forums/:forumId/topics', auth, async (req, res) => {
+    try {
+        const { title, content, tags } = req.body;
+        const { forumId } = req.params;
+
+        const forum = await Forum.findById(forumId);
+        if (!forum) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+
+        // Check if user has access to the forum
+        if (forum.isPrivate &&
+            !forum.moderators.includes(req.user._id) &&
+            !forum.allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const topic = new Topic({
+            title,
+            content,
+            forum: forumId,
+            author: req.user._id,
+            tags
+        });
+
+        await topic.save();
+        await topic.populate('author', 'name');
+        res.status(201).json(topic);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/forums/:forumId/topics', auth, async (req, res) => {
+    try {
+        const { forumId } = req.params;
+        const { sort = '-createdAt' } = req.query;
+
+        const forum = await Forum.findById(forumId);
+        if (!forum) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+
+        // Check if user has access to the forum
+        if (forum.isPrivate &&
+            !forum.moderators.includes(req.user._id) &&
+            !forum.allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const topics = await Topic.find({ forum: forumId })
+            .sort(sort)
+            .populate('author', 'name')
+            .populate('likes', 'name');
+        res.json(topics);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Comment Routes
+app.post('/topics/:topicId/comments', auth, async (req, res) => {
+    try {
+        const { content, parentCommentId } = req.body;
+        const { topicId } = req.params;
+
+        const topic = await Topic.findById(topicId).populate('forum');
+        if (!topic) {
+            return res.status(404).json({ error: 'Topic not found' });
+        }
+
+        // Check if user has access to the forum
+        if (topic.forum.isPrivate &&
+            !topic.forum.moderators.includes(req.user._id) &&
+            !topic.forum.allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const comment = new Comment({
+            content,
+            topic: topicId,
+            author: req.user._id,
+            parentComment: parentCommentId
+        });
+
+        await comment.save();
+        await comment.populate('author', 'name');
+        res.status(201).json(comment);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/topics/:topicId/comments', auth, async (req, res) => {
+    try {
+        const { topicId } = req.params;
+
+        const topic = await Topic.findById(topicId).populate('forum');
+        if (!topic) {
+            return res.status(404).json({ error: 'Topic not found' });
+        }
+
+        // Check if user has access to the forum
+        if (topic.forum.isPrivate &&
+            !topic.forum.moderators.includes(req.user._id) &&
+            !topic.forum.allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const comments = await Comment.find({ topic: topicId })
+            .sort('createdAt')
+            .populate('author', 'name')
+            .populate('likes', 'name')
+            .populate('parentComment');
+        res.json(comments);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Like/Unlike Routes
+app.post('/topics/:topicId/like', auth, async (req, res) => {
+    try {
+        const topic = await Topic.findById(req.params.topicId);
+        if (!topic) {
+            return res.status(404).json({ error: 'Topic not found' });
+        }
+
+        const hasLiked = topic.likes.includes(req.user._id);
+        if (hasLiked) {
+            topic.likes = topic.likes.filter(id => id.toString() !== req.user._id.toString());
+        } else {
+            topic.likes.push(req.user._id);
+        }
+
+        await topic.save();
+        res.json({ likes: topic.likes.length, hasLiked: !hasLiked });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.post('/comments/:commentId/like', auth, async (req, res) => {
+    try {
+        const comment = await Comment.findById(req.params.commentId);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        const hasLiked = comment.likes.includes(req.user._id);
+        if (hasLiked) {
+            comment.likes = comment.likes.filter(id => id.toString() !== req.user._id.toString());
+        } else {
+            comment.likes.push(req.user._id);
+        }
+
+        await comment.save();
+        res.json({ likes: comment.likes.length, hasLiked: !hasLiked });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
