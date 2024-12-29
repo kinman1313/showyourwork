@@ -31,6 +31,8 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     FilterList as FilterIcon,
+    DoneAll as DoneAllIcon,
+    TaskAlt as TaskAltIcon,
 } from '@mui/icons-material';
 import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -126,6 +128,7 @@ export default function ParentDashboard() {
             case 'in_progress': return 'info';
             case 'completed': return 'success';
             case 'verified': return 'secondary';
+            case 'resolved': return 'default';
             default: return 'default';
         }
     };
@@ -185,6 +188,65 @@ export default function ParentDashboard() {
         if (filters.child !== 'all' && chore.assignedTo?._id !== filters.child) return false;
         return true;
     });
+
+    const handleStatusChange = async (choreId, newStatus) => {
+        try {
+            const response = await api.patch(`/chores/${choreId}/status`, { status: newStatus });
+            setChores(chores.map(chore =>
+                chore._id === choreId ? response.data : chore
+            ));
+            setError('');
+        } catch (err) {
+            console.error('Status update error:', err);
+            setError(err.response?.data?.error || 'Failed to update chore status');
+        }
+    };
+
+    const getStatusActions = (chore) => {
+        switch (chore.status) {
+            case 'completed':
+                return (
+                    <Button
+                        startIcon={<CheckCircleIcon />}
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleStatusChange(chore._id, 'verified')}
+                        sx={{ mt: 2 }}
+                    >
+                        Verify Completion
+                    </Button>
+                );
+            case 'verified':
+                return (
+                    <Button
+                        startIcon={<DoneAllIcon />}
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleStatusChange(chore._id, 'resolved')}
+                        sx={{ mt: 2 }}
+                    >
+                        Resolve Chore
+                    </Button>
+                );
+            case 'resolved':
+                return (
+                    <Chip
+                        icon={<TaskAltIcon />}
+                        label="Resolved"
+                        color="secondary"
+                        sx={{ mt: 2 }}
+                    />
+                );
+            default:
+                return (
+                    <Chip
+                        label={chore.status.replace('_', ' ').toUpperCase()}
+                        color={getStatusColor(chore.status)}
+                        sx={{ mt: 2 }}
+                    />
+                );
+        }
+    };
 
     return (
         <Box sx={{ p: 3 }}>

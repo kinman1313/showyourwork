@@ -1,65 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box,
-    Grid,
     Card,
     CardContent,
     Typography,
     Button,
-    IconButton,
-    Alert,
-    CardActions,
+    Grid,
     Chip,
-    Tooltip,
+    LinearProgress,
+    Alert,
 } from '@mui/material';
 import {
     PlayArrow as StartIcon,
-    Done as DoneIcon,
-    AccessTime as PendingIcon,
-    CheckCircle as VerifiedIcon,
-    WorkOutline as InProgressIcon,
+    Check as CompleteIcon,
+    Star as StarIcon,
 } from '@mui/icons-material';
 import api from '../../api';
-import { useAuth } from '../../contexts/AuthContext';
 
 export default function ChildDashboard() {
     const [chores, setChores] = useState([]);
     const [points, setPoints] = useState(0);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { user } = useAuth();
 
     useEffect(() => {
         fetchChores();
+        fetchPoints();
     }, []);
 
     const fetchChores = async () => {
         try {
             const response = await api.get('/chores/assigned');
             setChores(response.data);
-            // Fetch total points
-            const pointsResponse = await api.get('/users/points');
-            setPoints(pointsResponse.data.points);
+            setLoading(false);
         } catch (err) {
             setError('Failed to fetch chores');
-            console.error('Fetch error:', err);
+            setLoading(false);
+        }
+    };
+
+    const fetchPoints = async () => {
+        try {
+            const response = await api.get('/users/points');
+            setPoints(response.data.points);
+        } catch (err) {
+            console.error('Failed to fetch points:', err);
         }
     };
 
     const handleStatusChange = async (choreId, newStatus) => {
         try {
-            const response = await api.patch(`/chores/${choreId}/status`, { status: newStatus });
-            setChores(chores.map(chore =>
-                chore._id === choreId ? { ...chore, status: response.data.status } : chore
-            ));
-            if (newStatus === 'completed') {
-                // Update points when a chore is completed
-                const pointsResponse = await api.get('/users/points');
-                setPoints(pointsResponse.data.points);
-            }
-            setError('');
+            await api.patch(`/chores/${choreId}/status`, { status: newStatus });
+            fetchChores(); // Refresh chores after status update
+            fetchPoints(); // Refresh points in case the chore was completed
         } catch (err) {
-            setError('Failed to update chore status');
-            console.error('Update error:', err);
+            setError(err.response?.data?.error || 'Failed to update chore status');
         }
     };
 
@@ -73,15 +68,55 @@ export default function ChildDashboard() {
         }
     };
 
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'pending': return <PendingIcon />;
-            case 'in_progress': return <InProgressIcon />;
-            case 'completed': return <DoneIcon />;
-            case 'verified': return <VerifiedIcon />;
-            default: return null;
+    const getStatusActions = (chore) => {
+        switch (chore.status) {
+            case 'pending':
+                return (
+                    <Button
+                        startIcon={<StartIcon />}
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleStatusChange(chore._id, 'in_progress')}
+                        sx={{ mt: 2 }}
+                    >
+                        Start Chore
+                    </Button>
+                );
+            case 'in_progress':
+                return (
+                    <Button
+                        startIcon={<CompleteIcon />}
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleStatusChange(chore._id, 'completed')}
+                        sx={{ mt: 2 }}
+                    >
+                        Mark Complete
+                    </Button>
+                );
+            case 'completed':
+                return (
+                    <Chip
+                        label="Waiting for verification"
+                        color="secondary"
+                        sx={{ mt: 2 }}
+                    />
+                );
+            case 'verified':
+                return (
+                    <Chip
+                        icon={<StarIcon />}
+                        label="Verified"
+                        color="secondary"
+                        sx={{ mt: 2 }}
+                    />
+                );
+            default:
+                return null;
         }
     };
+
+    if (loading) return <LinearProgress />;
 
     return (
         <Box sx={{ p: 3 }}>
@@ -99,99 +134,68 @@ export default function ChildDashboard() {
                     My Chores
                 </Typography>
                 <Chip
-                    label={`Total Points: ${points}`}
+                    icon={<StarIcon />}
+                    label={`${points} Points`}
                     color="primary"
-                    sx={{
-                        fontSize: '1.2rem',
-                        p: 2,
-                        height: 'auto',
-                        '& .MuiChip-label': {
-                            p: 1
-                        }
-                    }}
+                    sx={{ fontSize: '1.2rem', py: 2.5 }}
                 />
             </Box>
 
             {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
                     {error}
                 </Alert>
             )}
 
             <Grid container spacing={3}>
                 {chores.map((chore) => (
-                    <Grid item xs={12} md={6} key={chore._id}>
+                    <Grid item xs={12} sm={6} md={4} key={chore._id}>
                         <Card sx={{
                             height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
                             background: 'rgba(255, 255, 255, 0.1)',
                             backdropFilter: 'blur(10px)',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            transition: 'transform 0.2s',
                             '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: (theme) => `0 8px 16px ${theme.palette.primary.main}40`
+                                transform: 'scale(1.02)',
                             }
                         }}>
-                            <CardContent>
+                            <CardContent sx={{ flexGrow: 1 }}>
                                 <Typography variant="h6" gutterBottom>
                                     {chore.title}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" paragraph>
                                     {chore.description}
                                 </Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Chip
-                                        icon={getStatusIcon(chore.status)}
-                                        label={chore.status.replace('_', ' ').toUpperCase()}
-                                        color={getStatusColor(chore.status)}
-                                        sx={{ mr: 1 }}
-                                    />
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Chip
                                         label={`${chore.points} points`}
                                         color="primary"
-                                        variant="outlined"
+                                        size="small"
+                                        sx={{ mr: 1 }}
+                                    />
+                                    <Chip
+                                        label={chore.status.replace('_', ' ').toUpperCase()}
+                                        color={getStatusColor(chore.status)}
+                                        size="small"
                                     />
                                 </Box>
                                 <Typography variant="body2" color="text.secondary">
                                     Due: {new Date(chore.dueDate).toLocaleDateString()}
                                 </Typography>
+                                {getStatusActions(chore)}
                             </CardContent>
-                            <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                                {chore.status === 'pending' && (
-                                    <Tooltip title="Start Chore">
-                                        <IconButton
-                                            onClick={() => handleStatusChange(chore._id, 'in_progress')}
-                                            color="primary"
-                                            sx={{
-                                                '&:hover': {
-                                                    transform: 'scale(1.1)',
-                                                    background: 'rgba(25, 118, 210, 0.1)'
-                                                }
-                                            }}
-                                        >
-                                            <StartIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                                {chore.status === 'in_progress' && (
-                                    <Tooltip title="Mark as Completed">
-                                        <IconButton
-                                            onClick={() => handleStatusChange(chore._id, 'completed')}
-                                            color="success"
-                                            sx={{
-                                                '&:hover': {
-                                                    transform: 'scale(1.1)',
-                                                    background: 'rgba(46, 125, 50, 0.1)'
-                                                }
-                                            }}
-                                        >
-                                            <DoneIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                            </CardActions>
                         </Card>
                     </Grid>
                 ))}
+                {chores.length === 0 && (
+                    <Grid item xs={12}>
+                        <Alert severity="info">
+                            No chores assigned yet!
+                        </Alert>
+                    </Grid>
+                )}
             </Grid>
         </Box>
     );

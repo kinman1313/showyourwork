@@ -87,9 +87,10 @@ const choreSchema = new mongoose.Schema({
     points: { type: Number, default: 0 },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    status: { type: String, enum: ['pending', 'assigned', 'completed', 'verified'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'in_progress', 'completed', 'verified', 'resolved'], default: 'pending' },
     dueDate: Date,
-    completedDate: Date
+    completedDate: Date,
+    resolvedDate: Date
 });
 
 const Chore = mongoose.model('Chore', choreSchema);
@@ -428,7 +429,8 @@ app.patch('/chores/:id/status', auth, async (req, res) => {
         const validTransitions = {
             'pending': ['in_progress'],
             'in_progress': ['completed'],
-            'completed': ['verified']
+            'completed': ['verified'],
+            'verified': ['resolved']
         };
 
         const chore = await Chore.findById(req.params.id);
@@ -445,19 +447,35 @@ app.patch('/chores/:id/status', auth, async (req, res) => {
                 return res.status(400).json({ error: 'Invalid status transition' });
             }
         } else if (req.user.role === 'parent') {
-            if (chore.assignedBy.toString() !== req.user._id.toString()) {
-                return res.status(403).json({ error: 'Not authorized to update this chore' });
-            }
-            if (status !== 'verified' || chore.status !== 'completed') {
-                return res.status(400).json({ error: 'Parents can only verify completed chores' });
+            // Any parent can verify or resolve chores
+            if ((status !== 'verified' && status !== 'resolved') ||
+                (status === 'verified' && chore.status !== 'completed') ||
+                (status === 'resolved' && chore.status !== 'verified')) {
+                return res.status(400).json({ error: 'Invalid status transition for parent' });
             }
         }
 
         chore.status = status;
         if (status === 'completed') {
             chore.completedDate = new Date();
+        } else if (status === 'resolved') {
+            chore.resolvedDate = new Date();
         }
         await chore.save();
+
+        // Update points if the chore is verified or resolved
+        if (status === 'verified' || status === 'resolved') {
+            const child = await User.findById(chore.assignedTo);
+            if (child) {
+                const completedChores = await Chore.find({
+                    assignedTo: child._id,
+                    status: { $in: ['verified', 'resolved'] }
+                });
+                const totalPoints = completedChores.reduce((sum, c) => sum + c.points, 0);
+                child.points = totalPoints;
+                await child.save();
+            }
+        }
 
         res.json(chore);
     } catch (error) {
@@ -558,18 +576,14 @@ app.post('/forums', auth, async (req, res) => {
     try {
         const { name, description, isPrivate, allowedRoles } = req.body;
 
-        // Only parents can create forums
-        if (req.user.role !== 'parent') {
-            return res.status(403).json({ error: 'Only parents can create forums' });
-        }
-
+        // Allow both parents and children to create forums
         const forum = new Forum({
             name,
             description,
             createdBy: req.user._id,
             moderators: [req.user._id],
-            isPrivate,
-            allowedRoles
+            isPrivate: isPrivate || false,
+            allowedRoles: allowedRoles || ['parent', 'child']
         });
 
         await forum.save();
@@ -754,6 +768,90 @@ app.post('/comments/:commentId/like', auth, async (req, res) => {
         await comment.save();
         res.json({ likes: comment.likes.length, hasLiked: !hasLiked });
     } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Leaderboard endpoint
+app.get('/users/leaderboard', auth, async (req, res) => {
+    try {
+        const users = await User.find({ role: 'child' })
+            .select('name points')
+            .sort({ points: -1 })
+            .limit(10);
+        res.json(users);
+    } catch (err) {
+        console.error('Leaderboard error:', err);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+});
+
+// Calendar endpoint
+app.get('/chores/calendar', auth, async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0);
+
+        const query = {
+            dueDate: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+
+        if (req.user.role === 'child') {
+            query.assignedTo = req.user._id;
+        }
+
+        const chores = await Chore.find(query)
+            .populate('assignedTo', 'name')
+            .sort({ dueDate: 1 });
+
+        res.json(chores);
+    } catch (err) {
+        console.error('Calendar error:', err);
+        res.status(500).json({ error: 'Failed to fetch calendar data' });
+    }
+});
+
+// Add route for resolving chores
+app.patch('/chores/:id/resolve', auth, async (req, res) => {
+    try {
+        const chore = await Chore.findById(req.params.id);
+        if (!chore) {
+            return res.status(404).json({ error: 'Chore not found' });
+        }
+
+        // Only parents can resolve chores
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can resolve chores' });
+        }
+
+        // Can only resolve verified chores
+        if (chore.status !== 'verified') {
+            return res.status(400).json({ error: 'Only verified chores can be resolved' });
+        }
+
+        chore.status = 'resolved';
+        chore.resolvedDate = new Date();
+        await chore.save();
+
+        // Update child's total points
+        const child = await User.findById(chore.assignedTo);
+        if (child) {
+            const completedChores = await Chore.find({
+                assignedTo: child._id,
+                status: { $in: ['verified', 'resolved'] }
+            });
+            const totalPoints = completedChores.reduce((sum, c) => sum + c.points, 0);
+            child.points = totalPoints;
+            await child.save();
+        }
+
+        res.json(chore);
+    } catch (error) {
+        console.error('Resolve chore error:', error);
         res.status(400).json({ error: error.message });
     }
 });

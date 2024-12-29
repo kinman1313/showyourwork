@@ -1,112 +1,154 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-    AppBar,
     Box,
-    CssBaseline,
     Drawer,
-    IconButton,
+    AppBar,
+    Toolbar,
     List,
+    Typography,
+    Divider,
+    IconButton,
     ListItem,
     ListItemIcon,
     ListItemText,
-    Toolbar,
-    Typography,
-    Button,
-    Divider,
+    Avatar,
+    Menu,
+    MenuItem,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
-    Dashboard,
-    Assignment,
-    ExitToApp,
-    Person,
+    Dashboard as DashboardIcon,
     Forum as ForumIcon,
+    Event as CalendarIcon,
+    EmojiEvents as LeaderboardIcon,
+    ExitToApp as LogoutIcon,
+    Person as ProfileIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
 const drawerWidth = 240;
 
-export default function Layout({ children }) {
-    const [mobileOpen, setMobileOpen] = React.useState(false);
+export default function Layout() {
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
 
+    const handleMenuClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
     const handleLogout = () => {
+        handleMenuClose();
         logout();
         navigate('/login');
     };
 
-    const dashboardItems = user?.role === 'parent'
-        ? [
-            { text: 'Dashboard', icon: <Dashboard />, path: '/parent-dashboard' },
-            { text: 'Manage Chores', icon: <Assignment />, path: '/parent-dashboard/chores' },
-        ]
-        : [
-            { text: 'Dashboard', icon: <Dashboard />, path: '/child-dashboard' },
-            { text: 'My Chores', icon: <Assignment />, path: '/child-dashboard/chores' },
-        ];
-
-    const communityItems = [
-        { text: 'Forums', icon: <ForumIcon />, path: '/forums' },
+    const menuItems = [
+        {
+            text: user?.role === 'parent' ? 'Parent Dashboard' : 'Child Dashboard',
+            icon: <DashboardIcon />,
+            path: user?.role === 'parent' ? '/' : '/child-dashboard'
+        },
+        {
+            text: 'Calendar',
+            icon: <CalendarIcon />,
+            path: '/calendar'
+        },
+        {
+            text: 'Leaderboard',
+            icon: <LeaderboardIcon />,
+            path: '/leaderboard'
+        },
+        {
+            text: 'Forums',
+            icon: <ForumIcon />,
+            path: '/forums'
+        }
     ];
 
     const drawer = (
-        <div>
-            <Toolbar>
+        <Box>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                p: 2,
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(10px)'
+            }}>
+                <Avatar
+                    sx={{
+                        width: 64,
+                        height: 64,
+                        mb: 1,
+                        bgcolor: 'primary.main',
+                        cursor: 'pointer'
+                    }}
+                    onClick={handleMenuClick}
+                >
+                    {user?.name?.[0]}
+                </Avatar>
                 <Typography variant="h6" noWrap component="div">
-                    {process.env.REACT_APP_NAME}
+                    {user?.name}
                 </Typography>
-            </Toolbar>
-            <List>
-                {dashboardItems.map((item) => (
-                    <ListItem
-                        button
-                        key={item.text}
-                        onClick={() => navigate(item.path)}
-                        selected={location.pathname === item.path}
-                    >
-                        <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.text} />
-                    </ListItem>
-                ))}
-            </List>
+                <Typography variant="body2" color="text.secondary">
+                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                </Typography>
+            </Box>
             <Divider />
             <List>
-                {communityItems.map((item) => (
+                {menuItems.map((item) => (
                     <ListItem
                         button
                         key={item.text}
-                        onClick={() => navigate(item.path)}
-                        selected={location.pathname.startsWith(item.path)}
+                        onClick={() => {
+                            navigate(item.path);
+                            if (isMobile) setMobileOpen(false);
+                        }}
+                        sx={{
+                            backgroundColor: location.pathname === item.path ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.12)',
+                            }
+                        }}
                     >
-                        <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.text} />
+                        <ListItemIcon sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
+                            {item.icon}
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={item.text}
+                            sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}
+                        />
                     </ListItem>
                 ))}
             </List>
-        </div>
+        </Box>
     );
 
-    if (!user) {
-        return <Box component="main">{children}</Box>;
-    }
-
     return (
-        <Box sx={{ display: 'flex' }}>
-            <CssBaseline />
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <AppBar
                 position="fixed"
                 sx={{
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
                     ml: { sm: `${drawerWidth}px` },
-                    background: 'rgba(18, 18, 18, 0.95)',
-                    backdropFilter: 'blur(10px)',
+                    background: 'rgba(0, 0, 0, 0.8)',
+                    backdropFilter: 'blur(10px)'
                 }}
             >
                 <Toolbar>
@@ -120,23 +162,19 @@ export default function Layout({ children }) {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        {location.pathname.startsWith('/forums')
-                            ? 'Community Forums'
-                            : user?.role === 'parent'
-                                ? 'Parent Dashboard'
-                                : 'Child Dashboard'}
+                        Chore Tracker
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Person sx={{ mr: 1 }} />
-                        <Typography variant="body1" sx={{ mr: 2 }}>
-                            {user?.name}
-                        </Typography>
-                        <Button color="inherit" onClick={handleLogout} startIcon={<ExitToApp />}>
-                            Logout
-                        </Button>
-                    </Box>
+                    <IconButton
+                        onClick={handleMenuClick}
+                        color="inherit"
+                    >
+                        <Avatar sx={{ width: 32, height: 32 }}>
+                            {user?.name?.[0]}
+                        </Avatar>
+                    </IconButton>
                 </Toolbar>
             </AppBar>
+
             <Box
                 component="nav"
                 sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -154,7 +192,7 @@ export default function Layout({ children }) {
                             boxSizing: 'border-box',
                             width: drawerWidth,
                             background: 'rgba(18, 18, 18, 0.95)',
-                            backdropFilter: 'blur(10px)',
+                            backdropFilter: 'blur(10px)'
                         },
                     }}
                 >
@@ -168,7 +206,7 @@ export default function Layout({ children }) {
                             boxSizing: 'border-box',
                             width: drawerWidth,
                             background: 'rgba(18, 18, 18, 0.95)',
-                            backdropFilter: 'blur(10px)',
+                            backdropFilter: 'blur(10px)'
                         },
                     }}
                     open
@@ -176,6 +214,7 @@ export default function Layout({ children }) {
                     {drawer}
                 </Drawer>
             </Box>
+
             <Box
                 component="main"
                 sx={{
@@ -183,10 +222,38 @@ export default function Layout({ children }) {
                     p: 3,
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
                     mt: 8,
+                    background: 'linear-gradient(45deg, #1a1a1a 0%, #2d2d2d 100%)',
+                    minHeight: '100vh'
                 }}
             >
-                {children}
+                <Outlet />
             </Box>
+
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                    sx: {
+                        background: 'rgba(18, 18, 18, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }
+                }}
+            >
+                <MenuItem onClick={handleMenuClose}>
+                    <ListItemIcon>
+                        <ProfileIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Profile</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                        <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Logout</ListItemText>
+                </MenuItem>
+            </Menu>
         </Box>
     );
 } 

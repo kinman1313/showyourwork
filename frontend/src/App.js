@@ -1,55 +1,33 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import theme from './theme';
 
-// Auth Components
+// Import components
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
-
-// Dashboard Components
 import ParentDashboard from './components/dashboard/ParentDashboard';
 import ChildDashboard from './components/dashboard/ChildDashboard';
-
-// Forum Components
+import Leaderboard from './components/dashboard/Leaderboard';
+import ChoreCalendar from './components/dashboard/ChoreCalendar';
+import Layout from './components/layout/Layout';
 import ForumList from './components/forum/ForumList';
 import ForumView from './components/forum/ForumView';
 import TopicView from './components/forum/TopicView';
 
-// Layout Components
-import Layout from './components/layout/Layout';
-
-// Auth Context
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-
-const PrivateRoute = ({ children }) => {
-    const { isAuthenticated, user } = useAuth();
-    if (!isAuthenticated) {
-        return <Navigate to="/login" />;
-    }
-    return children;
-};
-
-const RoleBasedRoute = ({ children, allowedRole }) => {
+function PrivateRoute({ children }) {
     const { user } = useAuth();
-    if (!user || user.role !== allowedRole) {
-        return <Navigate to="/" />;
-    }
-    return children;
-};
+    return user ? children : <Navigate to="/login" />;
+}
 
-const DefaultRoute = () => {
-    const { isAuthenticated, user } = useAuth();
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" />;
-    }
-
-    return <Navigate to={user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard'} />;
-};
+function RoleBasedRoute({ children, allowedRoles }) {
+    const { user } = useAuth();
+    if (!user) return <Navigate to="/login" />;
+    return allowedRoles.includes(user.role) ? children : <Navigate to="/" />;
+}
 
 function App() {
     return (
@@ -57,69 +35,54 @@ function App() {
             <CssBaseline />
             <AuthProvider>
                 <Router>
-                    <Layout>
-                        <Routes>
-                            {/* Auth Routes */}
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/register" element={<Register />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            <Route path="/reset-password/:token" element={<ResetPassword />} />
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
 
-                            {/* Protected Routes */}
-                            <Route
-                                path="/parent-dashboard"
-                                element={
-                                    <PrivateRoute>
-                                        <RoleBasedRoute allowedRole="parent">
-                                            <ParentDashboard />
-                                        </RoleBasedRoute>
-                                    </PrivateRoute>
-                                }
-                            />
-                            <Route
-                                path="/child-dashboard"
-                                element={
-                                    <PrivateRoute>
-                                        <RoleBasedRoute allowedRole="child">
-                                            <ChildDashboard />
-                                        </RoleBasedRoute>
-                                    </PrivateRoute>
-                                }
-                            />
-
-                            {/* Forum Routes */}
-                            <Route
-                                path="/forums"
-                                element={
-                                    <PrivateRoute>
-                                        <ForumList />
-                                    </PrivateRoute>
-                                }
-                            />
-                            <Route
-                                path="/forums/:forumId"
-                                element={
-                                    <PrivateRoute>
-                                        <ForumView />
-                                    </PrivateRoute>
-                                }
-                            />
-                            <Route
-                                path="/topics/:topicId"
-                                element={
-                                    <PrivateRoute>
-                                        <TopicView />
-                                    </PrivateRoute>
-                                }
-                            />
-
-                            {/* Default Route */}
-                            <Route path="/" element={<DefaultRoute />} />
-
-                            {/* Catch-all Route */}
-                            <Route path="*" element={<DefaultRoute />} />
-                        </Routes>
-                    </Layout>
+                        <Route path="/" element={
+                            <PrivateRoute>
+                                <Layout />
+                            </PrivateRoute>
+                        }>
+                            <Route index element={
+                                <RoleBasedRoute allowedRoles={['parent']}>
+                                    <ParentDashboard />
+                                </RoleBasedRoute>
+                            } />
+                            <Route path="child-dashboard" element={
+                                <RoleBasedRoute allowedRoles={['child']}>
+                                    <ChildDashboard />
+                                </RoleBasedRoute>
+                            } />
+                            <Route path="calendar" element={
+                                <PrivateRoute>
+                                    <ChoreCalendar />
+                                </PrivateRoute>
+                            } />
+                            <Route path="leaderboard" element={
+                                <PrivateRoute>
+                                    <Leaderboard />
+                                </PrivateRoute>
+                            } />
+                            <Route path="forums" element={
+                                <PrivateRoute>
+                                    <ForumList />
+                                </PrivateRoute>
+                            } />
+                            <Route path="forums/:forumId" element={
+                                <PrivateRoute>
+                                    <ForumView />
+                                </PrivateRoute>
+                            } />
+                            <Route path="topics/:topicId" element={
+                                <PrivateRoute>
+                                    <TopicView />
+                                </PrivateRoute>
+                            } />
+                        </Route>
+                    </Routes>
                 </Router>
             </AuthProvider>
         </ThemeProvider>
