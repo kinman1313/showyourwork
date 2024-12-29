@@ -33,6 +33,11 @@ export const login = async (credentials) => {
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
+        console.log('API Request:', {
+            url: config.url,
+            method: config.method,
+            hasToken: !!token
+        });
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

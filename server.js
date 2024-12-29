@@ -20,9 +20,20 @@ app.get('/test-env', (req, res) => {
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production'
-        ? [process.env.FRONTEND_URL]
-        : ['http://localhost:3000'],
+    origin: function (origin, callback) {
+        console.log('Request origin:', origin);
+        console.log('Allowed origins:', process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : ['http://localhost:3000']);
+
+        if (process.env.NODE_ENV === 'production') {
+            if (!origin || process.env.FRONTEND_URL.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        } else {
+            callback(null, true);
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -30,6 +41,16 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('Body:', req.body);
+    }
+    next();
+});
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -66,7 +87,7 @@ const choreSchema = new mongoose.Schema({
     points: { type: Number, default: 0 },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    status: { type: String, enum: ['pending', 'completed', 'verified'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'assigned', 'completed', 'verified'], default: 'pending' },
     dueDate: Date,
     completedDate: Date
 });
@@ -214,21 +235,93 @@ app.post('/auth/reset-password', async (req, res) => {
 });
 
 // Chore Routes
-app.post('/chores', auth, async (req, res) => {
+app.post('/chores', (req, res, next) => {
+    console.log('Received request to /chores:', {
+        method: req.method,
+        headers: req.headers,
+        body: req.body
+    });
+    next();
+}, auth, async (req, res) => {
     try {
+        console.log('Creating chore with data:', {
+            body: req.body,
+            user: {
+                id: req.user._id,
+                role: req.user.role,
+                email: req.user.email
+            }
+        });
+
         if (req.user.role !== 'parent') {
             return res.status(403).json({ error: 'Only parents can create chores' });
+        }
+
+        // Validate required fields
+        const { title, points, assignedTo, dueDate } = req.body;
+        console.log('Validating fields:', {
+            title: { value: title, type: typeof title },
+            points: { value: points, type: typeof points },
+            assignedTo: { value: assignedTo, type: typeof assignedTo },
+            dueDate: { value: dueDate, type: typeof dueDate }
+        });
+
+        if (!title) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+        if (points === undefined || points === null) {
+            return res.status(400).json({ error: 'Points are required' });
+        }
+        if (!assignedTo) {
+            return res.status(400).json({ error: 'AssignedTo is required' });
+        }
+        if (!dueDate) {
+            return res.status(400).json({ error: 'Due date is required' });
+        }
+
+        // Validate assignedTo is a valid child
+        const child = await User.findOne({ _id: assignedTo, parentId: req.user._id });
+        console.log('Child lookup result:', child ? {
+            id: child._id,
+            name: child.name,
+            parentId: child.parentId
+        } : 'No child found');
+
+        if (!child) {
+            return res.status(400).json({ error: 'Invalid child assignment' });
         }
 
         const chore = new Chore({
             ...req.body,
             assignedBy: req.user._id,
-            status: 'assigned'
+            status: 'pending'
         });
+
+        console.log('Chore object before save:', {
+            ...chore.toObject(),
+            validation: chore.validateSync()
+        });
+
         await chore.save();
+        console.log('Chore saved successfully:', chore.toObject());
+
         res.status(201).json(chore);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error('Error creating chore:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            errors: error.errors,
+            body: req.body
+        });
+        res.status(400).json({
+            error: error.message,
+            type: error.name,
+            details: error.errors ? Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            })) : undefined
+        });
     }
 });
 

@@ -61,7 +61,24 @@ export default function ParentDashboard() {
 
     const handleCreateChore = async () => {
         try {
-            const response = await api.post('/chores', newChore);
+            // Ensure points is a number and format the data
+            const choreData = {
+                ...newChore,
+                points: Number(newChore.points),
+                dueDate: new Date(newChore.dueDate).toISOString()
+            };
+
+            // Log the exact data being sent
+            console.log('Sending chore data:', {
+                title: choreData.title,
+                description: choreData.description,
+                points: choreData.points,
+                assignedTo: choreData.assignedTo,
+                dueDate: choreData.dueDate
+            });
+
+            const response = await api.post('/chores', choreData);
+            console.log('Chore creation response:', response.data);
             setChores([...chores, response.data]);
             setOpenDialog(false);
             setNewChore({
@@ -73,8 +90,16 @@ export default function ParentDashboard() {
             });
             setError('');
         } catch (err) {
-            console.error('Create chore error:', err);
-            setError('Failed to create chore');
+            // Log the complete error details
+            console.error('Create chore error:', {
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status,
+                data: err.response?.data
+            });
+
+            // Show the specific error message to the user
+            setError(err.response?.data?.error || 'Failed to create chore');
         }
     };
 
@@ -97,7 +122,7 @@ export default function ParentDashboard() {
         const { name, value } = e.target;
         setNewChore((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: name === 'points' ? parseInt(value) || 0 : value,
         }));
     };
 
@@ -188,47 +213,50 @@ export default function ParentDashboard() {
             </Grid>
 
             {/* Create Chore Dialog */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+            <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
                 <DialogTitle>Create New Chore</DialogTitle>
                 <DialogContent>
                     <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        label="Title"
+                        autoFocus
+                        margin="dense"
                         name="title"
+                        label="Title"
+                        type="text"
+                        fullWidth
                         value={newChore.title}
                         onChange={handleChange}
+                        required
                     />
                     <TextField
-                        margin="normal"
-                        fullWidth
-                        label="Description"
+                        margin="dense"
                         name="description"
+                        label="Description"
+                        type="text"
+                        fullWidth
                         multiline
                         rows={3}
                         value={newChore.description}
                         onChange={handleChange}
                     />
                     <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        label="Points"
+                        margin="dense"
                         name="points"
+                        label="Points"
                         type="number"
+                        fullWidth
                         value={newChore.points}
                         onChange={handleChange}
+                        required
                     />
                     <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        select
-                        label="Assign To"
+                        margin="dense"
                         name="assignedTo"
+                        label="Assign To"
+                        select
+                        fullWidth
                         value={newChore.assignedTo}
                         onChange={handleChange}
+                        required
                     >
                         {children.map((child) => (
                             <MenuItem key={child._id} value={child._id}>
@@ -237,22 +265,25 @@ export default function ParentDashboard() {
                         ))}
                     </TextField>
                     <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        label="Due Date"
+                        margin="dense"
                         name="dueDate"
+                        label="Due Date"
                         type="date"
+                        fullWidth
                         value={newChore.dueDate}
                         onChange={handleChange}
                         InputLabelProps={{
                             shrink: true,
                         }}
+                        required
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-                    <Button onClick={handleCreateChore} variant="contained">
+                    <Button
+                        onClick={handleCreateChore}
+                        disabled={!newChore.title || !newChore.points || !newChore.assignedTo || !newChore.dueDate}
+                    >
                         Create
                     </Button>
                 </DialogActions>
