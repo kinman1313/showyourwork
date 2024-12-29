@@ -55,14 +55,14 @@ export default function Layout() {
     const handleLogout = () => {
         handleMenuClose();
         logout();
-        navigate('/login');
+        navigate('/login', { replace: true });
     };
 
     const menuItems = [
         {
             text: user?.role === 'parent' ? 'Parent Dashboard' : 'Child Dashboard',
             icon: <DashboardIcon />,
-            path: user?.role === 'parent' ? '/' : '/child-dashboard'
+            path: user?.role === 'parent' ? '/parent-dashboard' : '/child-dashboard'
         },
         {
             text: 'Calendar',
@@ -80,6 +80,13 @@ export default function Layout() {
             path: '/forums'
         }
     ];
+
+    const handleNavigation = (path) => {
+        if (isMobile) {
+            setMobileOpen(false);
+        }
+        navigate(path);
+    };
 
     const drawer = (
         <Box>
@@ -116,10 +123,7 @@ export default function Layout() {
                     <ListItem
                         button
                         key={item.text}
-                        onClick={() => {
-                            navigate(item.path);
-                            if (isMobile) setMobileOpen(false);
-                        }}
+                        onClick={() => handleNavigation(item.path)}
                         sx={{
                             backgroundColor: location.pathname === item.path ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                             '&:hover': {

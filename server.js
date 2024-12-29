@@ -857,8 +857,11 @@ app.patch('/chores/:id/resolve', auth, async (req, res) => {
 });
 
 // Remove the static file serving section and replace with a catch-all route
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 // Start server
