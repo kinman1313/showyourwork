@@ -20,7 +20,7 @@ import {
     Check as CheckIcon,
     Close as CloseIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function ParentDashboard() {
@@ -43,16 +43,14 @@ export default function ParentDashboard() {
         const fetchData = async () => {
             try {
                 const [choresRes, childrenRes] = await Promise.all([
-                    axios.get(`${process.env.REACT_APP_API_URL}/chores`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    }),
-                    axios.get(`${process.env.REACT_APP_API_URL}/users/children`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    }),
+                    api.get('/chores'),
+                    api.get('/users/children')
                 ]);
                 setChores(choresRes.data);
                 setChildren(childrenRes.data);
+                setError('');
             } catch (err) {
+                console.error('Dashboard fetch error:', err);
                 setError('Failed to fetch dashboard data');
             } finally {
                 setLoading(false);
@@ -63,13 +61,7 @@ export default function ParentDashboard() {
 
     const handleCreateChore = async () => {
         try {
-            const response = await axios.post(
-                `${process.env.REACT_APP_API_URL}/chores`,
-                newChore,
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                }
-            );
+            const response = await api.post('/chores', newChore);
             setChores([...chores, response.data]);
             setOpenDialog(false);
             setNewChore({
@@ -79,26 +71,24 @@ export default function ParentDashboard() {
                 assignedTo: '',
                 dueDate: '',
             });
+            setError('');
         } catch (err) {
+            console.error('Create chore error:', err);
             setError('Failed to create chore');
         }
     };
 
     const handleVerifyChore = async (choreId) => {
         try {
-            const response = await axios.patch(
-                `${process.env.REACT_APP_API_URL}/chores/${choreId}/status`,
-                { status: 'verified' },
-                {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                }
-            );
+            const response = await api.patch(`/chores/${choreId}/status`, { status: 'verified' });
             setChores(
                 chores.map((chore) =>
                     chore._id === choreId ? { ...chore, status: 'verified' } : chore
                 )
             );
+            setError('');
         } catch (err) {
+            console.error('Verify chore error:', err);
             setError('Failed to verify chore');
         }
     };
