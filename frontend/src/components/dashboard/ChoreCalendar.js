@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
-    Card,
-    CardContent,
+    Grid,
     Typography,
     IconButton,
-    Grid,
-    Tooltip,
-    Chip,
+    Card,
+    CardContent,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
     Button,
+    Chip,
     Alert,
+    LinearProgress,
+    Tooltip,
 } from '@mui/material';
 import {
-    ChevronLeft as PrevIcon,
-    ChevronRight as NextIcon,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon,
     Event as EventIcon,
-    AccessTime as TimeIcon,
-    Person as PersonIcon,
 } from '@mui/icons-material';
 import api from '../../api';
 
@@ -29,13 +28,11 @@ export default function ChoreCalendar() {
     const [chores, setChores] = useState([]);
     const [selectedChore, setSelectedChore] = useState(null);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchChores();
-    }, [fetchChores]);
-
-    const fetchChores = async () => {
+    const fetchChores = useCallback(async () => {
         try {
+            setLoading(true);
             const response = await api.get('/chores/calendar', {
                 params: {
                     month: currentDate.getMonth() + 1,
@@ -43,10 +40,17 @@ export default function ChoreCalendar() {
                 },
             });
             setChores(response.data);
+            setError('');
         } catch (err) {
             setError('Failed to fetch chores');
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [currentDate]);
+
+    useEffect(() => {
+        fetchChores();
+    }, [fetchChores]);
 
     const getDaysInMonth = (date) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -90,58 +94,62 @@ export default function ChoreCalendar() {
 
         // Add empty cells for days before the first day of the month
         for (let i = 0; i < firstDay; i++) {
-            days.push(<Grid item xs key={`empty-${i}`} sx={{ aspectRatio: '1' }} />);
+            days.push(
+                <Grid item xs key={`empty-${i}`}>
+                    <Box sx={{
+                        height: '100%',
+                        minHeight: 100,
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: 1
+                    }} />
+                </Grid>
+            );
         }
 
         // Add cells for each day of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const dayChores = getChoresForDay(day);
-            const isToday = new Date().getDate() === day &&
-                new Date().getMonth() === currentDate.getMonth() &&
-                new Date().getFullYear() === currentDate.getFullYear();
-
             days.push(
                 <Grid item xs key={day}>
                     <Card sx={{
                         height: '100%',
-                        background: isToday ? 'rgba(25, 118, 210, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                        minHeight: 100,
+                        background: 'rgba(255, 255, 255, 0.1)',
                         backdropFilter: 'blur(10px)',
+                        cursor: dayChores.length ? 'pointer' : 'default',
                         transition: 'transform 0.2s',
-                        cursor: dayChores.length > 0 ? 'pointer' : 'default',
-                        '&:hover': dayChores.length > 0 ? {
-                            transform: 'scale(1.05)',
-                            boxShadow: (theme) => `0 8px 16px ${theme.palette.primary.main}40`
+                        '&:hover': dayChores.length ? {
+                            transform: 'scale(1.02)',
+                            background: 'rgba(255, 255, 255, 0.15)'
                         } : {}
                     }}>
                         <CardContent>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    textAlign: 'center',
-                                    color: isToday ? 'primary.main' : 'text.primary'
-                                }}
-                            >
+                            <Typography variant="h6" align="center" gutterBottom>
                                 {day}
                             </Typography>
-                            {dayChores.map((chore, index) => (
-                                <Tooltip
-                                    key={chore._id}
-                                    title={`${chore.title} - ${chore.assignedTo?.name}`}
-                                >
-                                    <Chip
-                                        size="small"
-                                        label={chore.title}
-                                        color={getStatusColor(chore.status)}
-                                        onClick={() => setSelectedChore(chore)}
-                                        sx={{
-                                            mt: 0.5,
-                                            width: '100%',
-                                            maxWidth: '100%',
-                                            overflow: 'hidden'
-                                        }}
-                                    />
-                                </Tooltip>
-                            ))}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                {dayChores.map((chore) => (
+                                    <Tooltip
+                                        key={chore._id}
+                                        title={`${chore.title} - ${chore.assignedTo?.name || 'Unassigned'}`}
+                                    >
+                                        <Chip
+                                            size="small"
+                                            label={chore.title}
+                                            color={getStatusColor(chore.status)}
+                                            onClick={() => setSelectedChore(chore)}
+                                            sx={{
+                                                maxWidth: '100%',
+                                                '& .MuiChip-label': {
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }
+                                            }}
+                                        />
+                                    </Tooltip>
+                                ))}
+                            </Box>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -150,6 +158,8 @@ export default function ChoreCalendar() {
 
         return days;
     };
+
+    if (loading) return <LinearProgress />;
 
     return (
         <Box sx={{ p: 3 }}>
@@ -166,15 +176,15 @@ export default function ChoreCalendar() {
                 <Typography variant="h4" component="h1" sx={{ color: 'primary.main' }}>
                     Chore Calendar
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <IconButton onClick={handlePrevMonth} sx={{ color: 'primary.main' }}>
-                        <PrevIcon />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <IconButton onClick={handlePrevMonth} color="primary">
+                        <ChevronLeftIcon />
                     </IconButton>
-                    <Typography variant="h6" sx={{ mx: 2 }}>
-                        {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    <Typography variant="h6">
+                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                     </Typography>
-                    <IconButton onClick={handleNextMonth} sx={{ color: 'primary.main' }}>
-                        <NextIcon />
+                    <IconButton onClick={handleNextMonth} color="primary">
+                        <ChevronRightIcon />
                     </IconButton>
                 </Box>
             </Box>
@@ -185,61 +195,43 @@ export default function ChoreCalendar() {
                 </Alert>
             )}
 
-            <Grid container spacing={1} columns={7}>
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <Grid container spacing={2}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                     <Grid item xs key={day}>
-                        <Typography
-                            variant="subtitle1"
-                            sx={{
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                mb: 1,
-                                color: 'primary.main'
-                            }}
-                        >
+                        <Typography variant="subtitle1" align="center" sx={{ mb: 2 }}>
                             {day}
                         </Typography>
                     </Grid>
                 ))}
+
                 {renderCalendarDays()}
             </Grid>
 
             <Dialog
-                open={Boolean(selectedChore)}
+                open={!!selectedChore}
                 onClose={() => setSelectedChore(null)}
-                maxWidth="sm"
-                fullWidth
+                PaperProps={{
+                    sx: {
+                        background: 'rgba(18, 18, 18, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }
+                }}
             >
                 {selectedChore && (
                     <>
-                        <DialogTitle>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <EventIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                {selectedChore.title}
-                            </Box>
-                        </DialogTitle>
+                        <DialogTitle>{selectedChore.title}</DialogTitle>
                         <DialogContent>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="body1" paragraph>
-                                    {selectedChore.description}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                    <Typography>
-                                        Assigned to: {selectedChore.assignedTo?.name}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <TimeIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                    <Typography>
-                                        Due: {new Date(selectedChore.dueDate).toLocaleDateString()}
-                                    </Typography>
-                                </Box>
-                                <Chip
-                                    label={`${selectedChore.points} points`}
-                                    color="primary"
-                                    sx={{ mr: 1 }}
-                                />
+                            <Typography paragraph>
+                                {selectedChore.description}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Assigned to: {selectedChore.assignedTo?.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Points: {selectedChore.points}
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
                                 <Chip
                                     label={selectedChore.status.replace('_', ' ').toUpperCase()}
                                     color={getStatusColor(selectedChore.status)}
