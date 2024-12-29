@@ -222,7 +222,8 @@ app.post('/chores', auth, async (req, res) => {
 
         const chore = new Chore({
             ...req.body,
-            assignedBy: req.user._id
+            assignedBy: req.user._id,
+            status: 'assigned'
         });
         await chore.save();
         res.status(201).json(chore);
@@ -233,15 +234,57 @@ app.post('/chores', auth, async (req, res) => {
 
 app.get('/chores', auth, async (req, res) => {
     try {
-        let chores;
-        if (req.user.role === 'parent') {
-            chores = await Chore.find({ assignedBy: req.user._id })
-                .populate('assignedTo', 'name');
-        } else {
-            chores = await Chore.find({ assignedTo: req.user._id })
-                .populate('assignedBy', 'name');
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can view all chores' });
         }
+        const chores = await Chore.find({ assignedBy: req.user._id })
+            .populate('assignedTo', 'name');
         res.json(chores);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/chores/assigned', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'child') {
+            return res.status(403).json({ error: 'Only children can view assigned chores' });
+        }
+        const chores = await Chore.find({ assignedTo: req.user._id })
+            .populate('assignedBy', 'name');
+        res.json(chores);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.patch('/chores/:id/complete', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'child') {
+            return res.status(403).json({ error: 'Only children can complete chores' });
+        }
+
+        const chore = await Chore.findOne({ _id: req.params.id, assignedTo: req.user._id });
+        if (!chore) {
+            return res.status(404).json({ error: 'Chore not found' });
+        }
+
+        if (chore.status !== 'assigned') {
+            return res.status(400).json({ error: 'Chore cannot be completed' });
+        }
+
+        chore.status = 'completed';
+        chore.completedDate = new Date();
+        await chore.save();
+
+        // Calculate total points
+        const completedChores = await Chore.find({
+            assignedTo: req.user._id,
+            status: { $in: ['completed', 'verified'] }
+        });
+        const totalPoints = completedChores.reduce((sum, chore) => sum + chore.points, 0);
+
+        res.json({ chore, totalPoints });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -249,25 +292,60 @@ app.get('/chores', auth, async (req, res) => {
 
 app.patch('/chores/:id/status', auth, async (req, res) => {
     try {
-        const { id } = req.params;
-        const { status } = req.body;
-        const chore = await Chore.findById(id);
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can verify chores' });
+        }
 
+        const { status } = req.body;
+        if (status !== 'verified') {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const chore = await Chore.findOne({
+            _id: req.params.id,
+            assignedBy: req.user._id
+        });
         if (!chore) {
             return res.status(404).json({ error: 'Chore not found' });
         }
 
-        if (req.user.role === 'child' && status === 'completed') {
-            chore.status = status;
-            chore.completedDate = new Date();
-        } else if (req.user.role === 'parent' && status === 'verified') {
-            chore.status = status;
-        } else {
-            return res.status(403).json({ error: 'Invalid status update' });
+        if (chore.status !== 'completed') {
+            return res.status(400).json({ error: 'Chore must be completed first' });
         }
 
+        chore.status = status;
         await chore.save();
         res.json(chore);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/users/children', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'parent') {
+            return res.status(403).json({ error: 'Only parents can view children' });
+        }
+        const children = await User.find({ parentId: req.user._id }, 'name email');
+        res.json(children);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/users/points', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'child') {
+            return res.status(403).json({ error: 'Only children can view their points' });
+        }
+
+        const completedChores = await Chore.find({
+            assignedTo: req.user._id,
+            status: { $in: ['completed', 'verified'] }
+        });
+        const points = completedChores.reduce((sum, chore) => sum + chore.points, 0);
+
+        res.json({ points });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
