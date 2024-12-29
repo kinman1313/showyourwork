@@ -16,7 +16,22 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://showyourwork-frontend.onrender.com
+      - key: PORT
+        value: 5000
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: https://showyourwork-frontend.onrender.com
+      - path: /*
+        name: Access-Control-Allow-Methods
+        value: GET,POST,PUT,DELETE,PATCH,OPTIONS
+      - path: /*
+        name: Access-Control-Allow-Headers
+        value: Content-Type,Authorization
+      - path: /*
+        name: Access-Control-Allow-Credentials
+        value: "true"
     healthCheckPath: /test-env
     autoDeploy: true
 
@@ -26,9 +41,13 @@ services:
     publishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
-        sync: false
+        value: https://showyourwork-backend.onrender.com
       - key: NODE_ENV
         value: production
+      - key: REACT_APP_ENV
+        value: production
+      - key: GENERATE_SOURCEMAP
+        value: "false"
     routes:
       - type: rewrite
         source: /*

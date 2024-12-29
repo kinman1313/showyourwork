@@ -6,37 +6,39 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const path = require('path');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
 
 // Test endpoint for health check
-app.get('/test-env', (req, res) => {
+app.get('/test-env', cors(corsOptions), (req, res) => {
     res.json({
         message: 'Server is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        frontendUrl: process.env.FRONTEND_URL
     });
 });
 
 // CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
-        console.log('Request origin:', origin);
-        console.log('Allowed origins:', process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : ['http://localhost:3000']);
+        const allowedOrigins = [
+            'https://showyourwork-frontend.onrender.com',
+            'http://localhost:3000'
+        ];
 
-        if (process.env.NODE_ENV === 'production') {
-            if (!origin || process.env.FRONTEND_URL.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        } else {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
@@ -51,6 +53,9 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+// Add CORS headers for preflight requests
+app.options('*', cors(corsOptions));
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -73,6 +78,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, enum: ['parent', 'child'], required: true },
     name: { type: String, required: true },
+    profilePicture: { type: String, default: '' }, // URL to the profile picture
     resetToken: String,
     resetTokenExpiry: Date,
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // For children to reference their parent
@@ -852,6 +858,108 @@ app.patch('/chores/:id/resolve', auth, async (req, res) => {
         res.json(chore);
     } catch (error) {
         console.error('Resolve chore error:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Add multer for file uploads
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for profile picture uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/profile-pictures');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        const filetypes = /jpeg|jpg|png/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
+    }
+});
+
+// Ensure uploads directory exists
+const fs = require('fs');
+const uploadDir = 'uploads/profile-pictures';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
+// Upload profile picture
+app.post('/users/upload-profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Delete old profile picture if it exists
+        if (user.profilePicture) {
+            const oldPicturePath = path.join(__dirname, user.profilePicture);
+            if (fs.existsSync(oldPicturePath)) {
+                fs.unlinkSync(oldPicturePath);
+            }
+        }
+
+        // Update user's profile picture URL
+        const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
+        user.profilePicture = profilePictureUrl;
+        await user.save();
+
+        res.json({ url: profilePictureUrl });
+    } catch (error) {
+        console.error('Profile picture upload error:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Update user profile
+app.put('/users/profile', auth, async (req, res) => {
+    try {
+        const updates = {};
+        const allowedUpdates = ['name', 'email', 'profilePicture'];
+
+        Object.keys(req.body).forEach(key => {
+            if (allowedUpdates.includes(key)) {
+                updates[key] = req.body[key];
+            }
+        });
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            updates,
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Profile update error:', error);
         res.status(400).json({ error: error.message });
     }
 });
