@@ -42,7 +42,7 @@ export default function ParentDashboard() {
     const [children, setChildren] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [error, setError] = useState('');
-    const { user } = useAuth();
+    const { loading } = useAuth();
     const [newChore, setNewChore] = useState({
         title: '',
         description: '',
@@ -199,52 +199,6 @@ export default function ParentDashboard() {
         } catch (err) {
             console.error('Status update error:', err);
             setError(err.response?.data?.error || 'Failed to update chore status');
-        }
-    };
-
-    const getStatusActions = (chore) => {
-        switch (chore.status) {
-            case 'completed':
-                return (
-                    <Button
-                        startIcon={<CheckCircleIcon />}
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleStatusChange(chore._id, 'verified')}
-                        sx={{ mt: 2 }}
-                    >
-                        Verify Completion
-                    </Button>
-                );
-            case 'verified':
-                return (
-                    <Button
-                        startIcon={<DoneAllIcon />}
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => handleStatusChange(chore._id, 'resolved')}
-                        sx={{ mt: 2 }}
-                    >
-                        Resolve Chore
-                    </Button>
-                );
-            case 'resolved':
-                return (
-                    <Chip
-                        icon={<TaskAltIcon />}
-                        label="Resolved"
-                        color="secondary"
-                        sx={{ mt: 2 }}
-                    />
-                );
-            default:
-                return (
-                    <Chip
-                        label={chore.status.replace('_', ' ').toUpperCase()}
-                        color={getStatusColor(chore.status)}
-                        sx={{ mt: 2 }}
-                    />
-                );
         }
     };
 

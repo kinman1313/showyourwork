@@ -23,7 +23,7 @@ import api from '../../api';
 export default function Leaderboard() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [leaderboardData, setLeaderboardData] = useState([]);
 
     useEffect(() => {
         fetchLeaderboard();

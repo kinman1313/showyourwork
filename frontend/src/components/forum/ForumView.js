@@ -44,7 +44,7 @@ export default function ForumView() {
 
     useEffect(() => {
         fetchForumData();
-    }, [forumId]);
+    }, [fetchForumData]);
 
     const fetchForumData = async () => {
         try {

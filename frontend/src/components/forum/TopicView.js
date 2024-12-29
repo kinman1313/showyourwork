@@ -36,7 +36,7 @@ export default function TopicView() {
 
     useEffect(() => {
         fetchTopicData();
-    }, [topicId]);
+    }, [fetchTopicData]);
 
     const fetchTopicData = async () => {
         try {

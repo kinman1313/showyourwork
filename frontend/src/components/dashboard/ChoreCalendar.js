@@ -32,7 +32,7 @@ export default function ChoreCalendar() {
 
     useEffect(() => {
         fetchChores();
-    }, [currentDate]);
+    }, [fetchChores]);
 
     const fetchChores = async () => {
         try {

@@ -30,7 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export default function ForumList() {
     const [forums, setForums] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [openDialog, setOpenDialog] = useState(false);
     const [newForum, setNewForum] = useState({
@@ -39,7 +39,7 @@ export default function ForumList() {
         isPrivate: false,
     });
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { loading: authLoading } = useAuth();
 
     useEffect(() => {
         fetchForums();
@@ -49,10 +49,10 @@ export default function ForumList() {
         try {
             const response = await api.get('/forums');
             setForums(response.data);
-            setLoading(false);
+            setIsLoading(false);
         } catch (err) {
             setError('Failed to fetch forums');
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
@@ -67,7 +67,7 @@ export default function ForumList() {
         }
     };
 
-    if (loading) return <LinearProgress />;
+    if (authLoading) return <LinearProgress />;
 
     return (
         <Box sx={{ p: 3 }}>
