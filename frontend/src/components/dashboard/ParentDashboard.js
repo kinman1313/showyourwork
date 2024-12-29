@@ -26,7 +26,7 @@ import {
     Add as AddIcon,
     Check as CheckIcon,
     AccessTime as PendingIcon,
-    CheckCircle as VerifiedIcon,
+    CheckCircle as CheckCircleIcon,
     WorkOutline as InProgressIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
