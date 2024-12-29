@@ -1,77 +1,97 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme';
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// Auth Components
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 
-import HomePage from './components/HomePage';
+// Dashboard Components
+import ParentDashboard from './components/dashboard/ParentDashboard';
+import ChildDashboard from './components/dashboard/ChildDashboard';
 
-import Auth from './components/Auth';
+// Layout Components
+import Layout from './components/layout/Layout';
 
-import AdminPage from './components/AdminPage';
+// Auth Context
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-import RequestReset from './components/RequestReset';
+const PrivateRoute = ({ children }) => {
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
-import ResetPassword from './components/ResetPassword';
-
-import TestEnv from './components/TestEnv';
-
-import './App.css';
-
-
+const RoleBasedRoute = ({ children, allowedRole }) => {
+    const { user } = useAuth();
+    if (!user || user.role !== allowedRole) {
+        return <Navigate to="/" />;
+    }
+    return children;
+};
 
 function App() {
-
-    const [token, setToken] = useState(localStorage.getItem('token'));
-
-    const [userId, setUserId] = useState(localStorage.getItem('userId'));
-
-
-
-    useEffect(() => {
-
-        if (!token) {
-
-            // Redirect to auth if no token
-
-            // You can uncomment this if you want this behavior
-
-            // window.location.href = '/auth';
-
-        }
-
-    }, [token]);
-
-
-
     return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <AuthProvider>
+                <Router>
+                    <Layout>
+                        <Routes>
+                            {/* Auth Routes */}
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        <Router>
+                            {/* Protected Routes */}
+                            <Route
+                                path="/parent-dashboard"
+                                element={
+                                    <PrivateRoute>
+                                        <RoleBasedRoute allowedRole="parent">
+                                            <ParentDashboard />
+                                        </RoleBasedRoute>
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/child-dashboard"
+                                element={
+                                    <PrivateRoute>
+                                        <RoleBasedRoute allowedRole="child">
+                                            <ChildDashboard />
+                                        </RoleBasedRoute>
+                                    </PrivateRoute>
+                                }
+                            />
 
-            <div className="App">
-
-                <Routes>
-
-                    <Route path="/" element={<HomePage />} />
-
-                    <Route path="/auth" element={<Auth setToken={setToken} setUserId={setUserId} />} />
-
-                    <Route path="/admin" element={<AdminPage />} />
-
-                    <Route path="/request-reset" element={<RequestReset />} />
-
-                    <Route path="/reset-password" element={<ResetPassword />} />
-
-                </Routes>
-
-                <TestEnv />
-
-            </div>
-
-        </Router>
-
+                            {/* Default Route */}
+                            <Route
+                                path="/"
+                                element={
+                                    <PrivateRoute>
+                                        {({ user }) => (
+                                            <Navigate
+                                                to={
+                                                    user?.role === 'parent'
+                                                        ? '/parent-dashboard'
+                                                        : '/child-dashboard'
+                                                }
+                                            />
+                                        )}
+                                    </PrivateRoute>
+                                }
+                            />
+                        </Routes>
+                    </Layout>
+                </Router>
+            </AuthProvider>
+        </ThemeProvider>
     );
-
 }
-
-
 
 export default App;

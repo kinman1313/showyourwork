@@ -9,27 +9,19 @@ const TestEnv = () => {
         const testConnection = async () => {
             try {
                 console.log('Testing connection to:', process.env.REACT_APP_API_URL);
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/test-env`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/test-env`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Oops, we haven't received JSON!");
-                }
-
                 const data = await response.json();
+                console.log('Response data:', data);
                 setApiTest(data);
                 setIsLoading(false);
             } catch (err) {
+                console.error('Full error:', err);
                 setError(err.message);
-                console.error('Connection test failed:', err);
                 setIsLoading(false);
             }
         };

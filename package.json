@@ -1,6 +1,26 @@
 {
+    "name": "chore-tracker",
+    "version": "1.0.0",
+    "private": true,
     "scripts": {
-        "dev": "NODE_NO_WARNINGS=1 nodemon server.js",
-        "start": "node server.js"
+        "start": "node server.js",
+        "build": "cd frontend && npm install && npm run build",
+        "dev": "concurrently \"nodemon server.js\" \"cd frontend && npm start\"",
+        "postinstall": "npm run build"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.0.0",
+        "nodemailer": "^6.9.7"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.0.1"
+    },
+    "engines": {
+        "node": ">=18.0.0"
     }
 }
