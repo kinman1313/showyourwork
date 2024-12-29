@@ -138,7 +138,7 @@ export default function ParentDashboard() {
             case 'pending': return <PendingIcon />;
             case 'in_progress': return <InProgressIcon />;
             case 'completed': return <CheckIcon />;
-            case 'verified': return <VerifiedIcon />;
+            case 'verified': return <CheckCircleIcon />;
             default: return null;
         }
     };
