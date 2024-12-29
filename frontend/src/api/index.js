@@ -10,40 +10,31 @@ const api = axios.create({
     }
 });
 
-// Auth API calls
-export const register = async (userData) => {
-    try {
-        const response = await api.post('/auth/register', userData);
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || error.message;
-    }
-};
-
-export const login = async (credentials) => {
-    try {
-        const response = await api.post('/auth/login', credentials);
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || error.message;
-    }
-};
-
 // Add request interceptor to include auth token
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
-        console.log('API Request:', {
-            url: config.url,
-            method: config.method,
-            hasToken: !!token
-        });
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        console.error('API Error:', error);
+        if (error.response?.status === 401) {
+            // Handle unauthorized access
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
         return Promise.reject(error);
     }
 );
