@@ -48,18 +48,22 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
+            console.log('Attempting login...');
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
                 email,
                 password,
             });
+            console.log('Login response:', response.data);
             const { token, user } = response.data;
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             setUser(user);
             setError(null);
+            console.log('Login successful, user:', user);
             return user;
         } catch (err) {
+            console.error('Login error:', err.response?.data || err.message);
             setError(err.response?.data?.error || 'An error occurred during login');
             throw err;
         }

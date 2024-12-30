@@ -79,11 +79,14 @@ app.use(express.json());
 
 // Request logging middleware
 app.use((req, res, next) => {
+    console.log('=== Incoming Request ===');
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    console.log('Origin:', req.headers.origin);
     console.log('Headers:', req.headers);
     if (req.body && Object.keys(req.body).length > 0) {
         console.log('Body:', req.body);
     }
+    console.log('=== End Request ===\n');
     next();
 });
 
