@@ -1,55 +1,56 @@
 const express = require('express');
-
-const mongoose = require('mongoose');
-
 const cors = require('cors');
-
 require('dotenv').config();
-
-
-
-const authRoutes = require('./routes/auth');
-
-const choreRoutes = require('./routes/chores');
-
-const adminRoutes = require('./routes/admin');
-
-
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+// CORS configuration - MUST be before any routes
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://showyourwork-frontend.onrender.com');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
 
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
 
+    next();
+});
 
-// Middleware
-
-app.use(cors());
-
+// Parse JSON bodies
 app.use(express.json());
 
+// Test route
+app.get('/test-env', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running' });
+});
 
+// Auth routes
+app.use('/auth', require('./routes/auth'));
 
-// MongoDB Connection
+// Error handling
+app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found' });
+});
 
-    .then(() => console.log('MongoDB connected'))
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 
-    .catch(err => console.log(err));
+// Handle uncaught errors
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+});
 
-
-
-// Routes
-
-app.use('/api/auth', authRoutes);
-
-app.use('/api/chores', choreRoutes);
-
-app.use('/api/admin', adminRoutes);
-
-
-
-// Start server
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});

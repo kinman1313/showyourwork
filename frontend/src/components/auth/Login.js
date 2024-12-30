@@ -6,16 +6,19 @@ import './Login.css';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            setError('');
             await login(email, password);
-            navigate('/dashboard');
+            navigate('/forums');
         } catch (err) {
             console.error('Login error:', err);
+            setError('Failed to login. Please check your credentials.');
         }
     };
 
@@ -24,6 +27,7 @@ const Login = () => {
             <div className="login-card">
                 <h2>Welcome Back</h2>
                 <p className="login-subtitle">Sign in to continue</p>
+                {error && <div className="error-message">{error}</div>}
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
                         <input

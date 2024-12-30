@@ -7,20 +7,21 @@ const api = axios.create({
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json'
-    },
-    withCredentials: false
+    }
 });
 
-// Add request interceptor
+// Request interceptor
 api.interceptors.request.use(
     (config) => {
-        // Log request for debugging
-        console.log('Making request to:', config.url);
-
+        // Add token if exists
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Log request for debugging
+        console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
+
         return config;
     },
     (error) => {
@@ -29,18 +30,37 @@ api.interceptors.request.use(
     }
 );
 
-// Add response interceptor
+// Response interceptor
 api.interceptors.response.use(
     (response) => {
-        console.log('Received response:', response.status);
+        // Log successful response
+        console.log(`Response from ${response.config.url}: Status ${response.status}`);
         return response;
     },
     (error) => {
-        console.error('Response error:', error);
+        // Log error details
+        console.error('API Error:', {
+            url: error.config?.url,
+            status: error.response?.status,
+            message: error.message
+        });
+
+        // Handle authentication errors
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             window.location.href = '/login';
         }
+
+        // Handle network errors
+        if (error.message === 'Network Error') {
+            console.error('Network error - please check your connection');
+        }
+
+        // Handle timeout
+        if (error.code === 'ECONNABORTED') {
+            console.error('Request timed out');
+        }
+
         return Promise.reject(error);
     }
 );
