@@ -12,49 +12,6 @@ require('dotenv').config();
 
 const app = express();
 
-// Configure multer for profile picture uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/profile-pictures');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
-    }
-});
-
-// Ensure uploads directory exists
-const uploadDir = 'uploads/profile-pictures';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Test endpoint for health check
-app.get('/test-env', cors(corsOptions), (req, res) => {
-    res.json({
-        message: 'Server is running',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        frontendUrl: process.env.FRONTEND_URL
-    });
-});
-
 // CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
@@ -74,6 +31,16 @@ const corsOptions = {
     credentials: true,
     optionsSuccessStatus: 200
 };
+
+// Test endpoint for health check
+app.get('/test-env', cors(corsOptions), (req, res) => {
+    res.json({
+        message: 'Server is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        frontendUrl: process.env.FRONTEND_URL
+    });
+});
 
 app.use(cors(corsOptions));
 app.use(express.json());
