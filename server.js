@@ -19,27 +19,13 @@ app.get('/test-env', (req, res) => {
 });
 
 // CORS configuration
-const corsOptions = {
-    origin: function (origin, callback) {
-        console.log('Request origin:', origin);
-        console.log('Allowed origins:', process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : ['http://localhost:3000']);
+app.use(cors({
+    origin: ['https://showyourwork-frontend.onrender.com', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-        if (process.env.NODE_ENV === 'production') {
-            if (!origin || process.env.FRONTEND_URL.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        } else {
-            callback(null, true);
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Request logging middleware
