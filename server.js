@@ -90,9 +90,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files
+// Serve static files for uploads only
 app.use('/uploads', express.static('uploads'));
-app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI).then(() => {
@@ -996,11 +995,6 @@ app.put('/users/profile', auth, async (req, res) => {
     }
 });
 
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
-
 // Get user stats
 app.get('/users/stats', auth, async (req, res) => {
     try {
@@ -1043,7 +1037,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
     console.log('=== Server Configuration ===');
     console.log('CORS allowed origins:', corsOptions.origin);
-    console.log('Static files path:', path.join(__dirname, '../frontend/build'));
     console.log('=== End Server Configuration ===\n');
 });
 
