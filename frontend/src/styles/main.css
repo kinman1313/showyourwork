@@ -1,49 +1,19 @@
-/* Common container styles */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
+:root {
+    --dark-bg: #0a0b0e;
+    --dark-card: rgba(16, 18, 27, 0.8);
+    --glass-bg: rgba(16, 18, 27, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
+    --accent-blue: #3468d6;
+    --accent-green: #42dcd6;
+    --accent-glow: rgba(66, 220, 219, 0.2);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --tech-gradient: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
 }
 
-/* Common card styles */
-.card-base {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-/* Common button styles */
-.button-base {
-    background: var(--tech-gradient);
-    border: none;
-    border-radius: 8px;
-    padding: 12px 24px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-/* Common input styles */
-.input-base {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 12px;
-    color: white;
-    width: 100%;
-    margin-bottom: 1rem;
-}
-
-/* Common text styles */
-.title {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-}
-
-.subtitle {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    min-height: 100vh;
 }

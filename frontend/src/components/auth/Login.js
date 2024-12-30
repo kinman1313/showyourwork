@@ -1,61 +1,54 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-    Container,
-    Box,
-    Typography,
-    TextField,
-    Button,
-    Link,
-    Paper,
-    Alert,
-} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import './Login.css';
 
-export default function Login() {
+const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
     const { login } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            setError('');
-            setLoading(true);
-            const user = await login(email, password);
-            navigate(user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard');
+            await login(email, password);
+            navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to log in');
-        } finally {
-            setLoading(false);
+            console.error('Login error:', err);
         }
     };
 
     return (
         <div className="login-container">
-            <div className="login-card tech-border glow-pulse interactive-card">
-                <h2 className="gradient-text">Login</h2>
+            <div className="login-card">
+                <h2>Login</h2>
                 <form onSubmit={handleSubmit}>
-                    <input
-                        className="ripple"
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <input
-                        className="ripple"
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button className="ripple floating">Login</button>
+                    <div className="input-group">
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email"
+                            required
+                        />
+                    </div>
+                    <div className="input-group">
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            required
+                        />
+                    </div>
+                    <button type="submit" className="login-button">
+                        Login
+                    </button>
                 </form>
             </div>
         </div>
     );
-} 
+};
+
+export default Login; 
