@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './Login.css';
 
@@ -22,7 +22,8 @@ const Login = () => {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h2>Login</h2>
+                <h2>Welcome Back</h2>
+                <p className="login-subtitle">Sign in to continue</p>
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
                         <input
@@ -31,6 +32,8 @@ const Login = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Email"
                             required
+                            autoComplete="username"
+                            name="email"
                         />
                     </div>
                     <div className="input-group">
@@ -40,12 +43,20 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Password"
                             required
+                            autoComplete="current-password"
+                            name="password"
                         />
                     </div>
+                    <div className="form-links">
+                        <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+                    </div>
                     <button type="submit" className="login-button">
-                        Login
+                        Sign In
                     </button>
                 </form>
+                <div className="register-prompt">
+                    <p>Don't have an account? <Link to="/register" className="register-link">Sign Up</Link></p>
+                </div>
             </div>
         </div>
     );
