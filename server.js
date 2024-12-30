@@ -7,9 +7,43 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
+
+// Configure multer for profile picture uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/profile-pictures');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        const filetypes = /jpeg|jpg|png/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
+    }
+});
+
+// Ensure uploads directory exists
+const uploadDir = 'uploads/profile-pictures';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Test endpoint for health check
 app.get('/test-env', cors(corsOptions), (req, res) => {
@@ -867,44 +901,6 @@ app.patch('/chores/:id/resolve', auth, async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
-
-// Add multer for file uploads
-const multer = require('multer');
-const path = require('path');
-
-// Configure multer for profile picture uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/profile-pictures');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
-    }
-});
-
-// Ensure uploads directory exists
-const fs = require('fs');
-const uploadDir = 'uploads/profile-pictures';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));
