@@ -3,10 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, CssBaseline, CircularProgress, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import theme from './theme';
-import './styles/effects.css';
-import './styles/interactive.css';
-import './styles/background.css';
-import './styles/main.css';
 
 // Import components
 import Login from './components/auth/Login';
@@ -134,12 +130,7 @@ function App() {
             <CssBaseline />
             <AuthProvider>
                 <Router>
-                    <div className="tech-background" />
-                    <div className="app-container">
-                        <Layout>
-                            <AppRoutes />
-                        </Layout>
-                    </div>
+                    <AppRoutes />
                 </Router>
             </AuthProvider>
         </ThemeProvider>
