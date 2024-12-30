@@ -198,6 +198,10 @@ export default function Login() {
                                 component={RouterLink}
                                 to="/register"
                                 variant="body2"
+                                onClick={() => {
+                                    console.log('Register link clicked');
+                                    console.log('Current location:', window.location.pathname);
+                                }}
                                 sx={{
                                     color: theme.palette.primary.main,
                                     textDecoration: 'none',
@@ -213,6 +217,10 @@ export default function Login() {
                                 component={RouterLink}
                                 to="/forgot-password"
                                 variant="body2"
+                                onClick={() => {
+                                    console.log('Forgot password link clicked');
+                                    console.log('Current location:', window.location.pathname);
+                                }}
                                 sx={{
                                     color: theme.palette.primary.main,
                                     textDecoration: 'none',
