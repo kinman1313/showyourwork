@@ -34,35 +34,22 @@ function LoadingScreen() {
 
 function PrivateRoute({ children }) {
     const { user, loading } = useAuth();
-    console.log('PrivateRoute - User:', user);
-    console.log('PrivateRoute - Loading:', loading);
 
     if (loading) {
-        console.log('PrivateRoute - Still loading...');
         return <LoadingScreen />;
     }
 
-    console.log('PrivateRoute - Redirecting:', user ? 'to protected route' : 'to login');
     return user ? children : <Navigate to="/login" />;
 }
 
 function RoleBasedRoute({ children, allowedRoles }) {
     const { user, loading } = useAuth();
-    console.log('RoleBasedRoute - User:', user);
-    console.log('RoleBasedRoute - Loading:', loading);
-    console.log('RoleBasedRoute - Allowed Roles:', allowedRoles);
 
     if (loading) {
-        console.log('RoleBasedRoute - Still loading...');
         return <LoadingScreen />;
     }
 
-    if (!user) {
-        console.log('RoleBasedRoute - No user, redirecting to login');
-        return <Navigate to="/login" />;
-    }
-
-    console.log('RoleBasedRoute - User role:', user.role);
+    if (!user) return <Navigate to="/login" />;
     return allowedRoles.includes(user.role) ? children : <Navigate to="/" />;
 }
 

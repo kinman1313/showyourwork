@@ -6,130 +6,65 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const path = require('path');
-const multer = require('multer');
-const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 
-// Configure multer for profile picture uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/profile-pictures');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+// Test endpoint for health check
+app.get('/test-env', (req, res) => {
+    res.json({
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
 });
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: function (req, file, cb) {
-        const filetypes = /jpeg|jpg|png/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
-    }
-});
-
-// Ensure uploads directory exists
-if (!fs.existsSync('uploads/profile-pictures')) {
-    fs.mkdirSync('uploads/profile-pictures', { recursive: true });
-}
 
 // CORS configuration
 const corsOptions = {
     origin: function (origin, callback) {
-        const allowedOrigins = [
-            'https://showyourwork-frontend.onrender.com',
-            'http://localhost:3000'
-        ];
+        console.log('Request origin:', origin);
+        console.log('Allowed origins:', process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : ['http://localhost:3000']);
 
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) {
-            return callback(null, true);
-        }
-
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
+        if (process.env.NODE_ENV === 'production') {
+            if (!origin || process.env.FRONTEND_URL.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
         } else {
-            console.log('Origin not allowed by CORS:', origin);
-            callback(null, true); // Temporarily allow all origins while debugging
+            callback(null, true);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true,
-    optionsSuccessStatus: 200
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 };
 
-// Apply CORS middleware first
 app.use(cors(corsOptions));
-
-// Basic middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log('=== Incoming Request ===');
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    console.log('Origin:', req.headers.origin);
     console.log('Headers:', req.headers);
     if (req.body && Object.keys(req.body).length > 0) {
         console.log('Body:', req.body);
     }
-    console.log('=== End Request ===\n');
     next();
 });
 
-// Serve static files for uploads only
-app.use('/uploads', express.static('uploads'));
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to ShowYourWork API' });
+});
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI).then(() => {
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
     console.log('Connected to MongoDB');
 }).catch(err => {
     console.error('MongoDB connection error:', err);
-});
-
-// Test endpoint for health check (before other routes)
-app.get('/test-env', async (req, res) => {
-    console.log('Test endpoint called:', {
-        headers: req.headers,
-        origin: req.headers.origin
-    });
-
-    try {
-        // Test MongoDB connection
-        await mongoose.connection.db.admin().ping();
-        console.log('MongoDB connection test successful');
-
-        res.json({
-            message: 'Server is running',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            frontendUrl: process.env.FRONTEND_URL,
-            mongodbConnected: true
-        });
-    } catch (error) {
-        console.error('MongoDB connection test failed:', error);
-        res.status(500).json({
-            message: 'Server is running but database connection failed',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            frontendUrl: process.env.FRONTEND_URL,
-            mongodbConnected: false,
-            error: error.message
-        });
-    }
 });
 
 // User Schema
@@ -138,13 +73,6 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, enum: ['parent', 'child'], required: true },
     name: { type: String, required: true },
-    profilePicture: { type: String, default: '' },
-    bio: { type: String, default: '' },
-    interests: { type: String, default: '' },
-    favoriteChores: { type: String, default: '' },
-    points: { type: Number, default: 0 },
-    completedChores: { type: Number, default: 0 },
-    level: { type: Number, default: 1 },
     resetToken: String,
     resetTokenExpiry: Date,
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // For children to reference their parent
@@ -276,26 +204,20 @@ app.post('/auth/register', async (req, res) => {
 
 app.post('/auth/login', async (req, res) => {
     try {
-        console.log('Login attempt:', { email: req.body.email });
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-
         if (!user) {
-            console.log('Login failed: User not found');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            console.log('Login failed: Password mismatch');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-        console.log('Login successful:', { userId: user._id, role: user.role });
         res.json({ token, user: { id: user._id, email, role: user.role, name: user.name } });
     } catch (error) {
-        console.error('Login error:', error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -934,123 +856,18 @@ app.patch('/chores/:id/resolve', auth, async (req, res) => {
     }
 });
 
-// Upload profile picture
-app.post('/users/upload-profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
+// Remove the static file serving section and replace with a catch-all route
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Delete old profile picture if it exists
-        if (user.profilePicture) {
-            const oldPicturePath = path.join(__dirname, user.profilePicture);
-            if (fs.existsSync(oldPicturePath)) {
-                fs.unlinkSync(oldPicturePath);
-            }
-        }
-
-        // Update user's profile picture URL
-        const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
-        user.profilePicture = profilePictureUrl;
-        await user.save();
-
-        res.json({ url: profilePictureUrl });
-    } catch (error) {
-        console.error('Profile picture upload error:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// Update user profile
-app.put('/users/profile', auth, async (req, res) => {
-    try {
-        const updates = {};
-        const allowedUpdates = ['name', 'email', 'profilePicture', 'bio', 'interests', 'favoriteChores'];
-
-        Object.keys(req.body).forEach(key => {
-            if (allowedUpdates.includes(key)) {
-                updates[key] = req.body[key];
-            }
-        });
-
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            updates,
-            { new: true, runValidators: true }
-        );
-
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        res.json(user);
-    } catch (error) {
-        console.error('Profile update error:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// Get user stats
-app.get('/users/stats', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Calculate level based on points (every 100 points = 1 level)
-        const level = Math.floor(user.points / 100) + 1;
-
-        // Get completed chores count
-        const completedChores = await Chore.countDocuments({
-            assignedTo: user._id,
-            status: { $in: ['completed', 'verified', 'resolved'] }
-        });
-
-        // Update user stats
-        user.level = level;
-        user.completedChores = completedChores;
-        await user.save();
-
-        res.json({
-            totalPoints: user.points,
-            completedChores: user.completedChores,
-            level: user.level
-        });
-    } catch (error) {
-        console.error('Stats fetch error:', error);
-        res.status(400).json({ error: error.message });
-    }
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 // Start server
-const PORT = process.env.PORT || 10000;
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n=== Server Started ===');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
-    console.log('=== Server Configuration ===');
-    console.log('CORS allowed origins:', corsOptions.origin);
-    console.log('=== End Server Configuration ===\n');
-});
-
-// Handle server errors
-server.on('error', (error) => {
-    console.error('Server error:', error);
-    process.exit(1);
-});
-
-// Handle process termination
-process.on('SIGTERM', () => {
-    console.log('Received SIGTERM. Performing graceful shutdown...');
-    server.close(() => {
-        console.log('Server closed. Exiting process.');
-        process.exit(0);
-    });
 }); 

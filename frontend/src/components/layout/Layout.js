@@ -1,44 +1,44 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-    AppBar,
     Box,
-    CssBaseline,
     Drawer,
-    IconButton,
+    AppBar,
+    Toolbar,
     List,
+    Typography,
+    Divider,
+    IconButton,
     ListItem,
-    ListItemButton,
     ListItemIcon,
     ListItemText,
+    Avatar,
     Menu,
     MenuItem,
-    Toolbar,
-    Typography,
-    Avatar,
-    Dialog,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
     Dashboard as DashboardIcon,
-    Assignment as ChoresIcon,
     Forum as ForumIcon,
-    CalendarToday as CalendarIcon,
-    Leaderboard as LeaderboardIcon,
+    Event as CalendarIcon,
+    EmojiEvents as LeaderboardIcon,
+    ExitToApp as LogoutIcon,
     Person as ProfileIcon,
-    Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import Profile from '../profile/Profile';
 
 const drawerWidth = 240;
 
-export default function Layout({ children }) {
+export default function Layout() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
-    const [openProfile, setOpenProfile] = useState(false);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -52,50 +52,100 @@ export default function Layout({ children }) {
         setAnchorEl(null);
     };
 
-    const handleProfileClick = () => {
-        handleMenuClose();
-        setOpenProfile(true);
-    };
-
     const handleLogout = () => {
         handleMenuClose();
         logout();
-        navigate('/login');
+        navigate('/login', { replace: true });
     };
 
     const menuItems = [
         {
             text: user?.role === 'parent' ? 'Parent Dashboard' : 'Child Dashboard',
             icon: <DashboardIcon />,
-            path: user?.role === 'parent' ? '/parent-dashboard' : '/child-dashboard',
+            path: user?.role === 'parent' ? '/parent-dashboard' : '/child-dashboard'
         },
-        { text: 'Chores', icon: <ChoresIcon />, path: '/chores' },
-        { text: 'Forums', icon: <ForumIcon />, path: '/forums' },
-        { text: 'Calendar', icon: <CalendarIcon />, path: '/calendar' },
-        { text: 'Leaderboard', icon: <LeaderboardIcon />, path: '/leaderboard' },
+        {
+            text: 'Calendar',
+            icon: <CalendarIcon />,
+            path: '/calendar'
+        },
+        {
+            text: 'Leaderboard',
+            icon: <LeaderboardIcon />,
+            path: '/leaderboard'
+        },
+        {
+            text: 'Forums',
+            icon: <ForumIcon />,
+            path: '/forums'
+        }
     ];
 
+    const handleNavigation = (path) => {
+        if (isMobile) {
+            setMobileOpen(false);
+        }
+        navigate(path);
+    };
+
     const drawer = (
-        <div>
-            <Toolbar />
+        <Box>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                p: 2,
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(10px)'
+            }}>
+                <Avatar
+                    sx={{
+                        width: 64,
+                        height: 64,
+                        mb: 1,
+                        bgcolor: 'primary.main',
+                        cursor: 'pointer'
+                    }}
+                    onClick={handleMenuClick}
+                >
+                    {user?.name?.[0]}
+                </Avatar>
+                <Typography variant="h6" noWrap component="div">
+                    {user?.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                </Typography>
+            </Box>
+            <Divider />
             <List>
                 {menuItems.map((item) => (
-                    <ListItem key={item.text} disablePadding>
-                        <ListItemButton onClick={() => navigate(item.path)}>
-                            <ListItemIcon sx={{ color: 'primary.main' }}>
-                                {item.icon}
-                            </ListItemIcon>
-                            <ListItemText primary={item.text} />
-                        </ListItemButton>
+                    <ListItem
+                        button
+                        key={item.text}
+                        onClick={() => handleNavigation(item.path)}
+                        sx={{
+                            backgroundColor: location.pathname === item.path ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.12)',
+                            }
+                        }}
+                    >
+                        <ListItemIcon sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
+                            {item.icon}
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={item.text}
+                            sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}
+                        />
                     </ListItem>
                 ))}
             </List>
-        </div>
+        </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex' }}>
-            <CssBaseline />
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <AppBar
                 position="fixed"
                 sx={{
@@ -122,17 +172,7 @@ export default function Layout({ children }) {
                         onClick={handleMenuClick}
                         color="inherit"
                     >
-                        <Avatar
-                            src={user?.profilePicture}
-                            sx={{
-                                width: 32,
-                                height: 32,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                },
-                            }}
-                        >
+                        <Avatar sx={{ width: 32, height: 32 }}>
                             {user?.name?.[0]}
                         </Avatar>
                     </IconButton>
@@ -148,15 +188,15 @@ export default function Layout({ children }) {
                     open={mobileOpen}
                     onClose={handleDrawerToggle}
                     ModalProps={{
-                        keepMounted: true,
+                        keepMounted: true, // Better open performance on mobile.
                     }}
                     sx={{
                         display: { xs: 'block', sm: 'none' },
                         '& .MuiDrawer-paper': {
                             boxSizing: 'border-box',
                             width: drawerWidth,
-                            background: 'rgba(0, 0, 0, 0.8)',
-                            backdropFilter: 'blur(10px)',
+                            background: 'rgba(18, 18, 18, 0.95)',
+                            backdropFilter: 'blur(10px)'
                         },
                     }}
                 >
@@ -169,8 +209,8 @@ export default function Layout({ children }) {
                         '& .MuiDrawer-paper': {
                             boxSizing: 'border-box',
                             width: drawerWidth,
-                            background: 'rgba(0, 0, 0, 0.8)',
-                            backdropFilter: 'blur(10px)',
+                            background: 'rgba(18, 18, 18, 0.95)',
+                            backdropFilter: 'blur(10px)'
                         },
                     }}
                     open
@@ -186,55 +226,38 @@ export default function Layout({ children }) {
                     p: 3,
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
                     mt: 8,
+                    background: 'linear-gradient(45deg, #1a1a1a 0%, #2d2d2d 100%)',
+                    minHeight: '100vh'
                 }}
             >
-                {/* Profile Menu */}
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                    PaperProps={{
-                        sx: {
-                            background: 'rgba(18, 18, 18, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                        },
-                    }}
-                >
-                    <MenuItem onClick={handleProfileClick}>
-                        <ListItemIcon>
-                            <ProfileIcon fontSize="small" />
-                        </ListItemIcon>
-                        Profile
-                    </MenuItem>
-                    <MenuItem onClick={handleLogout}>
-                        <ListItemIcon>
-                            <LogoutIcon fontSize="small" />
-                        </ListItemIcon>
-                        Logout
-                    </MenuItem>
-                </Menu>
-
-                {/* Profile Dialog */}
-                <Dialog
-                    open={openProfile}
-                    onClose={() => setOpenProfile(false)}
-                    maxWidth="md"
-                    fullWidth
-                    PaperProps={{
-                        sx: {
-                            background: 'rgba(18, 18, 18, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                        },
-                    }}
-                >
-                    <Profile onClose={() => setOpenProfile(false)} />
-                </Dialog>
-
-                {/* Main Content */}
-                {children}
+                <Outlet />
             </Box>
+
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                    sx: {
+                        background: 'rgba(18, 18, 18, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }
+                }}
+            >
+                <MenuItem onClick={handleMenuClose}>
+                    <ListItemIcon>
+                        <ProfileIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Profile</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                        <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Logout</ListItemText>
+                </MenuItem>
+            </Menu>
         </Box>
     );
 } 

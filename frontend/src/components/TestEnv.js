@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
 
 const TestEnv = () => {
     const [apiTest, setApiTest] = useState(null);
@@ -10,9 +9,15 @@ const TestEnv = () => {
         const testConnection = async () => {
             try {
                 console.log('Testing connection to:', process.env.REACT_APP_API_URL);
-                const response = await api.get('/test-env');
-                console.log('Response data:', response.data);
-                setApiTest(response.data);
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/test-env`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);
+                setApiTest(data);
                 setIsLoading(false);
             } catch (err) {
                 console.error('Full error:', err);

@@ -28,26 +28,17 @@ export const AuthProvider = ({ children }) => {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
                     // Validate token by making a request to the backend
-                    const response = await axios.get(`${process.env.REACT_APP_API_URL}/test-env`);
+                    await axios.get(`${process.env.REACT_APP_API_URL}/test-env`);
 
-                    // Only set user if the response is valid
-                    if (response.status === 200) {
-                        setUser(JSON.parse(storedUser));
-                    } else {
-                        throw new Error('Invalid token');
-                    }
+                    // If request succeeds, token is valid
+                    setUser(JSON.parse(storedUser));
                 } catch (err) {
-                    // If token is invalid, clear storage and headers
+                    // If token is invalid, clear storage
                     console.error('Auth initialization error:', err);
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
-                    delete axios.defaults.headers.common['Authorization'];
                     setUser(null);
                 }
-            } else {
-                // No token or user in storage
-                setUser(null);
-                delete axios.defaults.headers.common['Authorization'];
             }
             setLoading(false);
         };
@@ -57,22 +48,18 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            console.log('Attempting login...');
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
                 email,
                 password,
             });
-            console.log('Login response:', response.data);
             const { token, user } = response.data;
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             setUser(user);
             setError(null);
-            console.log('Login successful, user:', user);
             return user;
         } catch (err) {
-            console.error('Login error:', err.response?.data || err.message);
             setError(err.response?.data?.error || 'An error occurred during login');
             throw err;
         }
