@@ -1032,4 +1032,17 @@ app.get('/users/stats', auth, async (req, res) => {
         console.error('Stats fetch error:', error);
         res.status(400).json({ error: error.message });
     }
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('=== Server Started ===');
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
+    console.log('=== Server Configuration ===');
+    console.log('CORS allowed origins:', corsOptions.origin);
+    console.log('Static files path:', path.join(__dirname, '../frontend/build'));
+    console.log('=== End Server Configuration ===\n');
 }); 
