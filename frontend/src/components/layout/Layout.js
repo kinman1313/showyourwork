@@ -16,6 +16,7 @@ import {
     Toolbar,
     Typography,
     Avatar,
+    Dialog,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -32,7 +33,7 @@ import Profile from '../profile/Profile';
 
 const drawerWidth = 240;
 
-export default function Layout() {
+export default function Layout({ children }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const [openProfile, setOpenProfile] = useState(false);

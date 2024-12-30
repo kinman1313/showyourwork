@@ -78,7 +78,13 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, enum: ['parent', 'child'], required: true },
     name: { type: String, required: true },
-    profilePicture: { type: String, default: '' }, // URL to the profile picture
+    profilePicture: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    interests: { type: String, default: '' },
+    favoriteChores: { type: String, default: '' },
+    points: { type: Number, default: 0 },
+    completedChores: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
     resetToken: String,
     resetTokenExpiry: Date,
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // For children to reference their parent
@@ -970,6 +976,39 @@ app.use(express.static(path.join(__dirname, '../frontend/build')));
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
+// Get user stats
+app.get('/users/stats', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Calculate level based on points (every 100 points = 1 level)
+        const level = Math.floor(user.points / 100) + 1;
+
+        // Get completed chores count
+        const completedChores = await Chore.countDocuments({
+            assignedTo: user._id,
+            status: { $in: ['completed', 'verified', 'resolved'] }
+        });
+
+        // Update user stats
+        user.level = level;
+        user.completedChores = completedChores;
+        await user.save();
+
+        res.json({
+            totalPoints: user.points,
+            completedChores: user.completedChores,
+            level: user.level
+        });
+    } catch (error) {
+        console.error('Stats fetch error:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // Start server

@@ -12,35 +12,60 @@ import {
     IconButton,
     Alert,
     Paper,
+    Grid,
+    Chip,
 } from '@mui/material';
 import {
     Edit as EditIcon,
     PhotoCamera as PhotoCameraIcon,
+    Star as StarIcon,
+    EmojiEvents as TrophyIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api';
 
-export default function Profile() {
+export default function Profile({ onClose }) {
     const { user, setUser } = useAuth();
     const [openDialog, setOpenDialog] = useState(false);
     const [editData, setEditData] = useState({
         name: '',
         email: '',
+        bio: '',
+        interests: '',
+        favoriteChores: '',
         profilePicture: '',
     });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
+    const [stats, setStats] = useState({
+        totalPoints: 0,
+        completedChores: 0,
+        level: 1,
+    });
 
     useEffect(() => {
         if (user) {
             setEditData({
                 name: user.name || '',
                 email: user.email || '',
+                bio: user.bio || '',
+                interests: user.interests || '',
+                favoriteChores: user.favoriteChores || '',
                 profilePicture: user.profilePicture || '',
             });
+            fetchUserStats();
         }
     }, [user]);
+
+    const fetchUserStats = async () => {
+        try {
+            const response = await api.get('/users/stats');
+            setStats(response.data);
+        } catch (err) {
+            console.error('Failed to fetch user stats:', err);
+        }
+    };
 
     const handleEditClick = () => {
         setOpenDialog(true);
@@ -63,7 +88,6 @@ export default function Profile() {
         try {
             let profilePictureUrl = editData.profilePicture;
 
-            // If a new file was selected, upload it first
             if (selectedFile) {
                 const formData = new FormData();
                 formData.append('profilePicture', selectedFile);
@@ -75,10 +99,8 @@ export default function Profile() {
                 profilePictureUrl = uploadResponse.data.url;
             }
 
-            // Update user profile
             const response = await api.put('/users/profile', {
-                name: editData.name,
-                email: editData.email,
+                ...editData,
                 profilePicture: profilePictureUrl,
             });
 
@@ -110,35 +132,94 @@ export default function Profile() {
                     p: 3,
                     background: 'rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
-                    maxWidth: 600,
+                    maxWidth: 800,
                     margin: '0 auto',
                 }}
             >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-                    <Avatar
-                        src={user.profilePicture}
-                        sx={{
-                            width: 100,
-                            height: 100,
-                            mr: 3,
-                            border: '3px solid',
-                            borderColor: 'primary.main',
-                        }}
-                    >
-                        {user.name?.[0]}
-                    </Avatar>
-                    <Box>
-                        <Typography variant="h4" component="h1" gutterBottom>
-                            {user.name}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary" gutterBottom>
-                            {user.email}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                        </Typography>
-                    </Box>
-                </Box>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={4}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Avatar
+                                src={user.profilePicture}
+                                sx={{
+                                    width: 150,
+                                    height: 150,
+                                    mb: 2,
+                                    border: '3px solid',
+                                    borderColor: 'primary.main',
+                                }}
+                            >
+                                {user.name?.[0]}
+                            </Avatar>
+                            <Typography variant="h5" gutterBottom>
+                                {user.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {user.email}
+                            </Typography>
+                            <Chip
+                                icon={<StarIcon />}
+                                label={`Level ${stats.level}`}
+                                color="primary"
+                                sx={{ mb: 1 }}
+                            />
+                            <Chip
+                                icon={<TrophyIcon />}
+                                label={`${stats.totalPoints} Points`}
+                                color="secondary"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} md={8}>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                About Me
+                            </Typography>
+                            <Typography variant="body1" paragraph>
+                                {user.bio || 'No bio added yet'}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Interests
+                            </Typography>
+                            <Typography variant="body1" paragraph>
+                                {user.interests || 'No interests added yet'}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Favorite Chores
+                            </Typography>
+                            <Typography variant="body1">
+                                {user.favoriteChores || 'No favorite chores added yet'}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Stats
+                            </Typography>
+                            <Grid container spacing={2}>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Total Points
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        {stats.totalPoints}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Completed Chores
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        {stats.completedChores}
+                                    </Typography>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    </Grid>
+                </Grid>
 
                 <Button
                     variant="contained"
@@ -161,6 +242,8 @@ export default function Profile() {
             <Dialog
                 open={openDialog}
                 onClose={handleClose}
+                maxWidth="md"
+                fullWidth
                 PaperProps={{
                     sx: {
                         background: 'rgba(18, 18, 18, 0.95)',
@@ -207,27 +290,67 @@ export default function Profile() {
                         </label>
                     </Box>
 
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        name="name"
-                        label="Name"
-                        type="text"
-                        fullWidth
-                        value={editData.name}
-                        onChange={handleChange}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        margin="dense"
-                        name="email"
-                        label="Email"
-                        type="email"
-                        fullWidth
-                        value={editData.email}
-                        onChange={handleChange}
-                        sx={{ mb: 2 }}
-                    />
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                name="name"
+                                label="Name"
+                                type="text"
+                                fullWidth
+                                value={editData.name}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                margin="dense"
+                                name="email"
+                                label="Email"
+                                type="email"
+                                fullWidth
+                                value={editData.email}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                margin="dense"
+                                name="bio"
+                                label="Bio"
+                                multiline
+                                rows={3}
+                                fullWidth
+                                value={editData.bio}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                margin="dense"
+                                name="interests"
+                                label="Interests"
+                                multiline
+                                rows={2}
+                                fullWidth
+                                value={editData.interests}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                margin="dense"
+                                name="favoriteChores"
+                                label="Favorite Chores"
+                                multiline
+                                rows={2}
+                                fullWidth
+                                value={editData.favoriteChores}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>Cancel</Button>
