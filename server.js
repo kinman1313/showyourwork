@@ -1035,9 +1035,9 @@ app.get('/users/stats', auth, async (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('=== Server Started ===');
+const PORT = process.env.PORT || 10000;
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('\n=== Server Started ===');
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
@@ -1045,4 +1045,19 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('CORS allowed origins:', corsOptions.origin);
     console.log('Static files path:', path.join(__dirname, '../frontend/build'));
     console.log('=== End Server Configuration ===\n');
+});
+
+// Handle server errors
+server.on('error', (error) => {
+    console.error('Server error:', error);
+    process.exit(1);
+});
+
+// Handle process termination
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM. Performing graceful shutdown...');
+    server.close(() => {
+        console.log('Server closed. Exiting process.');
+        process.exit(0);
+    });
 }); 
