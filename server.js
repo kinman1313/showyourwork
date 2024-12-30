@@ -72,7 +72,10 @@ const corsOptions = {
 
 // Apply CORS middleware first
 app.use(cors(corsOptions));
+
+// Basic middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -87,19 +90,47 @@ app.use((req, res, next) => {
     next();
 });
 
-// Add CORS headers for preflight requests
-app.options('*', cors(corsOptions));
-
-// Root endpoint
-app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to ShowYourWork API' });
-});
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI).then(() => {
     console.log('Connected to MongoDB');
 }).catch(err => {
     console.error('MongoDB connection error:', err);
+});
+
+// Test endpoint for health check (before other routes)
+app.get('/test-env', async (req, res) => {
+    console.log('Test endpoint called:', {
+        headers: req.headers,
+        origin: req.headers.origin
+    });
+
+    try {
+        // Test MongoDB connection
+        await mongoose.connection.db.admin().ping();
+        console.log('MongoDB connection test successful');
+
+        res.json({
+            message: 'Server is running',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            frontendUrl: process.env.FRONTEND_URL,
+            mongodbConnected: true
+        });
+    } catch (error) {
+        console.error('MongoDB connection test failed:', error);
+        res.status(500).json({
+            message: 'Server is running but database connection failed',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            frontendUrl: process.env.FRONTEND_URL,
+            mongodbConnected: false,
+            error: error.message
+        });
+    }
 });
 
 // User Schema
@@ -904,9 +935,6 @@ app.patch('/chores/:id/resolve', auth, async (req, res) => {
     }
 });
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
-
 // Upload profile picture
 app.post('/users/upload-profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
     try {
@@ -968,9 +996,6 @@ app.put('/users/profile', auth, async (req, res) => {
     }
 });
 
-// Remove the static file serving section and replace with a catch-all route
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
@@ -1007,44 +1032,4 @@ app.get('/users/stats', auth, async (req, res) => {
         console.error('Stats fetch error:', error);
         res.status(400).json({ error: error.message });
     }
-});
-
-// Test endpoint for health check
-app.get('/test-env', async (req, res) => {
-    console.log('Test endpoint called:', {
-        headers: req.headers,
-        origin: req.headers.origin
-    });
-
-    try {
-        // Test MongoDB connection
-        await mongoose.connection.db.admin().ping();
-        console.log('MongoDB connection test successful');
-
-        res.json({
-            message: 'Server is running',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            frontendUrl: process.env.FRONTEND_URL,
-            mongodbConnected: true
-        });
-    } catch (error) {
-        console.error('MongoDB connection test failed:', error);
-        res.status(500).json({
-            message: 'Server is running but database connection failed',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            frontendUrl: process.env.FRONTEND_URL,
-            mongodbConnected: false,
-            error: error.message
-        });
-    }
-});
-
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
 }); 
