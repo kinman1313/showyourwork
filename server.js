@@ -52,28 +52,25 @@ const corsOptions = {
             'http://localhost:3000'
         ];
 
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            console.log('Origin not allowed by CORS:', origin);
+            callback(null, true); // Temporarily allow all origins while debugging
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
     optionsSuccessStatus: 200
 };
 
-// Test endpoint for health check
-app.get('/test-env', cors(corsOptions), (req, res) => {
-    res.json({
-        message: 'Server is running',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        frontendUrl: process.env.FRONTEND_URL
-    });
-});
-
+// Apply CORS middleware first
 app.use(cors(corsOptions));
 app.use(express.json());
 
@@ -249,20 +246,26 @@ app.post('/auth/register', async (req, res) => {
 
 app.post('/auth/login', async (req, res) => {
     try {
+        console.log('Login attempt:', { email: req.body.email });
         const { email, password } = req.body;
         const user = await User.findOne({ email });
+
         if (!user) {
+            console.log('Login failed: User not found');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('Login failed: Password mismatch');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+        console.log('Login successful:', { userId: user._id, role: user.role });
         res.json({ token, user: { id: user._id, email, role: user.role, name: user.name } });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -1003,6 +1006,38 @@ app.get('/users/stats', auth, async (req, res) => {
     } catch (error) {
         console.error('Stats fetch error:', error);
         res.status(400).json({ error: error.message });
+    }
+});
+
+// Test endpoint for health check
+app.get('/test-env', async (req, res) => {
+    console.log('Test endpoint called:', {
+        headers: req.headers,
+        origin: req.headers.origin
+    });
+
+    try {
+        // Test MongoDB connection
+        await mongoose.connection.db.admin().ping();
+        console.log('MongoDB connection test successful');
+
+        res.json({
+            message: 'Server is running',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            frontendUrl: process.env.FRONTEND_URL,
+            mongodbConnected: true
+        });
+    } catch (error) {
+        console.error('MongoDB connection test failed:', error);
+        res.status(500).json({
+            message: 'Server is running but database connection failed',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            frontendUrl: process.env.FRONTEND_URL,
+            mongodbConnected: false,
+            error: error.message
+        });
     }
 });
 
