@@ -140,7 +140,7 @@ export default function Profile({ onClose }) {
                     <Grid item xs={12} md={4}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Avatar
-                                src={user.profilePicture}
+                                src={user.profilePicture || `https://www.gravatar.com/avatar/${user.email}?s=200&d=mp`}
                                 sx={{
                                     width: 150,
                                     height: 150,
@@ -148,8 +148,13 @@ export default function Profile({ onClose }) {
                                     border: '3px solid',
                                     borderColor: 'primary.main',
                                 }}
+                                onError={(e) => {
+                                    e.target.src = `data:image/svg+xml,${encodeURIComponent(
+                                        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${encodeURIComponent('#1976d2')}"><text x="50%" y="50%" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dy=".3em">${user.name?.[0]?.toUpperCase() || '?'}</text></svg>`
+                                    )}`;
+                                }}
                             >
-                                {user.name?.[0]}
+                                {user.name?.[0]?.toUpperCase()}
                             </Avatar>
                             <Typography variant="h5" gutterBottom>
                                 {user.name}
@@ -267,10 +272,15 @@ export default function Profile({ onClose }) {
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <Avatar
-                            src={selectedFile ? URL.createObjectURL(selectedFile) : user.profilePicture}
+                            src={selectedFile ? URL.createObjectURL(selectedFile) : (user.profilePicture || `https://www.gravatar.com/avatar/${user.email}?s=80&d=mp`)}
                             sx={{ width: 80, height: 80, mr: 2 }}
+                            onError={(e) => {
+                                e.target.src = `data:image/svg+xml,${encodeURIComponent(
+                                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${encodeURIComponent('#1976d2')}"><text x="50%" y="50%" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dy=".3em">${user.name?.[0]?.toUpperCase() || '?'}</text></svg>`
+                                )}`;
+                            }}
                         >
-                            {user.name?.[0]}
+                            {user.name?.[0]?.toUpperCase()}
                         </Avatar>
                         <label htmlFor="profile-picture">
                             <input
