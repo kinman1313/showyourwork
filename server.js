@@ -971,7 +971,7 @@ app.post('/users/upload-profile-picture', auth, upload.single('profilePicture'),
 app.put('/users/profile', auth, async (req, res) => {
     try {
         const updates = {};
-        const allowedUpdates = ['name', 'email', 'profilePicture'];
+        const allowedUpdates = ['name', 'email', 'profilePicture', 'bio', 'interests', 'favoriteChores'];
 
         Object.keys(req.body).forEach(key => {
             if (allowedUpdates.includes(key)) {
