@@ -28,17 +28,26 @@ export const AuthProvider = ({ children }) => {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
                     // Validate token by making a request to the backend
-                    await axios.get(`${process.env.REACT_APP_API_URL}/test-env`);
+                    const response = await axios.get(`${process.env.REACT_APP_API_URL}/test-env`);
 
-                    // If request succeeds, token is valid
-                    setUser(JSON.parse(storedUser));
+                    // Only set user if the response is valid
+                    if (response.status === 200) {
+                        setUser(JSON.parse(storedUser));
+                    } else {
+                        throw new Error('Invalid token');
+                    }
                 } catch (err) {
-                    // If token is invalid, clear storage
+                    // If token is invalid, clear storage and headers
                     console.error('Auth initialization error:', err);
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
+                    delete axios.defaults.headers.common['Authorization'];
                     setUser(null);
                 }
+            } else {
+                // No token or user in storage
+                setUser(null);
+                delete axios.defaults.headers.common['Authorization'];
             }
             setLoading(false);
         };

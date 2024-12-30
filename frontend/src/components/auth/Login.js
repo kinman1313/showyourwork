@@ -28,8 +28,10 @@ export default function Login() {
             setError('');
             setLoading(true);
             const user = await login(email, password);
-            navigate(user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard');
+            console.log('Login successful, navigating to:', user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard');
+            navigate(user.role === 'parent' ? '/parent-dashboard' : '/child-dashboard', { replace: true });
         } catch (err) {
+            console.error('Login error:', err);
             setError(err.response?.data?.error || 'Failed to log in');
         } finally {
             setLoading(false);
