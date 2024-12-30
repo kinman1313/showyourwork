@@ -145,6 +145,58 @@ export default function Layout() {
     );
 
     return (
+        <div className="main-container">
+            <nav className="nav-container tech-border shimmer">
+                <AppBar
+                    position="fixed"
+                    sx={{
+                        width: { sm: `calc(100% - ${drawerWidth}px)` },
+                        ml: { sm: `${drawerWidth}px` },
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        backdropFilter: 'blur(10px)'
+                    }}
+                >
+                    <Toolbar>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="start"
+                            onClick={handleDrawerToggle}
+                            sx={{ mr: 2, display: { sm: 'none' } }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                            Chore Tracker
+                        </Typography>
+                        <IconButton
+                            onClick={handleMenuClick}
+                            color="inherit"
+                        >
+                            <Avatar sx={{ width: 32, height: 32 }}>
+                                {user?.name?.[0]}
+                            </Avatar>
+                        </IconButton>
+                    </Toolbar>
+                </AppBar>
+
+                <Box
+                    component="nav"
+                    sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+                >
+                    <Drawer
+                        variant="temporary"
+                        open={mobileOpen}
+                        onClose={handleDrawerToggle}
+                        ModalProps={{
+                            keepMounted: true, // Better open performance on mobile.
+                        }}
+                        sx={{
+                            display: { xs: 'block', sm: 'none' },
+                            '& .MuiDrawer-paper': {
+                                boxSizing: 'border-box',
+                                width: drawerWidth,
+                                background: 'rgba(18, 18, 18, 0.95)',
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <AppBar
                 position="fixed"

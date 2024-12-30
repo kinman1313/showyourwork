@@ -4,10 +4,10 @@
     "private": true,
     "dependencies": {
         "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-        "@emotion/react": "^11.11.1",
-        "@emotion/styled": "^11.11.0",
-        "@mui/material": "^5.14.20",
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.0",
         "@mui/icons-material": "^5.14.20",
+        "@mui/material": "^5.14.20",
         "@testing-library/jest-dom": "^5.x.x",
         "@testing-library/react": "^13.x.x",
         "@testing-library/user-event": "^13.x.x",
@@ -16,6 +16,7 @@
         "react-dom": "^18.x.x",
         "react-router-dom": "^6.x.x",
         "react-scripts": "5.x.x",
+        "react-transition-group": "^4.4.5",
         "web-vitals": "^2.x.x"
     },
     "scripts": {
@@ -44,6 +45,7 @@
         ]
     },
     "devDependencies": {
+        "@types/react-transition-group": "^4.4.12",
         "source-map-explorer": "^2.5.3"
     }
 }
