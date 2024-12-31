@@ -3,6 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const smartFeaturesRoutes = require('./routes/smartFeatures');
 
 const app = express();
 
@@ -62,6 +63,9 @@ app.get('/forums', (req, res) => {
 
     res.json(forums);
 });
+
+// Smart features routes
+app.use('/api/smart', smartFeaturesRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
