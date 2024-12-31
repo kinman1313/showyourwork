@@ -19,8 +19,12 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Log request for debugging
-        console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
+        // Log outgoing requests
+        console.log('Request:', {
+            method: config.method,
+            url: config.url,
+            headers: config.headers
+        });
 
         return config;
     },
@@ -33,34 +37,27 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
     (response) => {
-        // Log successful response
-        console.log(`Response from ${response.config.url}: Status ${response.status}`);
+        console.log('Response:', {
+            status: response.status,
+            url: response.config.url,
+            data: response.data
+        });
         return response;
     },
     (error) => {
-        // Log error details
-        console.error('API Error:', {
-            url: error.config?.url,
-            status: error.response?.status,
-            message: error.message
-        });
-
-        // Handle authentication errors
-        if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
+        if (error.response) {
+            // Server responded with error
+            console.error('Server error:', {
+                status: error.response.status,
+                data: error.response.data
+            });
+        } else if (error.request) {
+            // Request made but no response
+            console.error('Network error:', error.message);
+        } else {
+            // Error in request configuration
+            console.error('Request config error:', error.message);
         }
-
-        // Handle network errors
-        if (error.message === 'Network Error') {
-            console.error('Network error - please check your connection');
-        }
-
-        // Handle timeout
-        if (error.code === 'ECONNABORTED') {
-            console.error('Request timed out');
-        }
-
         return Promise.reject(error);
     }
 );
