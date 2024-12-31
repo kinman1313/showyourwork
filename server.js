@@ -409,7 +409,8 @@ app.patch('/chores/:id/complete', auth, async (req, res) => {
     }
 });
 
-app.patch('/chores/:id/status', auth, async (req, res) => {
+// Move to choreController.js
+const updateChoreStatus = async (req, res) => {
     try {
         const { status } = req.body;
         const validTransitions = {
@@ -468,7 +469,10 @@ app.patch('/chores/:id/status', auth, async (req, res) => {
         console.error('Status update error:', error);
         res.status(400).json({ error: error.message });
     }
-});
+};
+
+// Update route
+app.patch('/chores/:id/status', auth, updateChoreStatus);
 
 app.get('/users/children', auth, async (req, res) => {
     try {
