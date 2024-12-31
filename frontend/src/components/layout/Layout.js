@@ -1,45 +1,47 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import './Layout.css';
 
 const Layout = ({ children }) => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
+    const isAuthPage = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+
     const handleLogout = async () => {
         try {
             await logout();
             navigate('/login');
         } catch (error) {
-            console.error('Failed to log out:', error);
+            console.error('Logout failed:', error);
         }
     };
 
-    // Don't show nav bar on login page
-    const isLoginPage = location.pathname === '/login';
-    const isRegisterPage = location.pathname === '/register';
-    const hideNav = isLoginPage || isRegisterPage;
-
     return (
-        <div className="main-container">
-            {!hideNav && (
-                <nav className="nav-container tech-border shimmer">
+        <div className="app-container">
+            {!isAuthPage && currentUser && (
+                <nav className="nav-container glass-container tech-border">
                     <div className="nav-content">
-                        {currentUser ? (
-                            <div className="nav-links">
-                                <button onClick={() => navigate('/forums')} className="nav-link ripple">
-                                    Forums
-                                </button>
-                                <button onClick={handleLogout} className="nav-link ripple">
-                                    Logout
-                                </button>
-                            </div>
-                        ) : null}
+                        <div className="nav-brand gradient-text" onClick={() => navigate('/forums')}>
+                            ShowYourWork
+                        </div>
+                        <div className="nav-links">
+                            <button onClick={() => navigate('/forums')} className="nav-link">
+                                Forums
+                            </button>
+                            <button onClick={() => navigate('/dashboard')} className="nav-link">
+                                Dashboard
+                            </button>
+                            <button onClick={handleLogout} className="nav-link">
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </nav>
             )}
-            <main className="content-container">
+            <main className="main-content">
                 {children}
             </main>
         </div>
