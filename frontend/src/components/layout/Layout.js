@@ -22,28 +22,43 @@ const Layout = ({ children }) => {
     return (
         <div className="app-container">
             {!isAuthPage && currentUser && (
-                <nav className="nav-container glass-container tech-border">
+                <nav className="nav-container glass-card tech-border">
                     <div className="nav-content">
-                        <div className="nav-brand gradient-text" onClick={() => navigate('/forums')}>
-                            ShowYourWork
+                        <div className="nav-brand" onClick={() => navigate('/forums')}>
+                            <h1 className="gradient-text">ShowYourWork</h1>
                         </div>
                         <div className="nav-links">
-                            <button onClick={() => navigate('/forums')} className="nav-link">
+                            <button
+                                className="nav-button tech-border interactive-card"
+                                onClick={() => navigate('/forums')}
+                            >
                                 Forums
                             </button>
-                            <button onClick={() => navigate('/dashboard')} className="nav-link">
+                            <button
+                                className="nav-button tech-border interactive-card"
+                                onClick={() => navigate('/dashboard')}
+                            >
                                 Dashboard
                             </button>
-                            <button onClick={handleLogout} className="nav-link">
+                            <button
+                                className="nav-button tech-border interactive-card"
+                                onClick={handleLogout}
+                            >
                                 Logout
                             </button>
                         </div>
                     </div>
                 </nav>
             )}
-            <main className="main-content">
-                {children}
+            <main className="main-content glass-card tech-border">
+                <div className="content-wrapper">
+                    {children}
+                </div>
             </main>
+            <div className="background-effects">
+                <div className="glow-effect top-right"></div>
+                <div className="glow-effect bottom-left"></div>
+            </div>
         </div>
     );
 };
