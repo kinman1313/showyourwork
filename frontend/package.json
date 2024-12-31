@@ -12,6 +12,7 @@
         "@testing-library/react": "^13.x.x",
         "@testing-library/user-event": "^13.x.x",
         "axios": "^1.x.x",
+        "cross-env": "^7.0.3",
         "react": "^18.x.x",
         "react-dom": "^18.x.x",
         "react-router-dom": "^6.x.x",
@@ -44,7 +45,6 @@
         ]
     },
     "devDependencies": {
-        "cross-env": "^7.0.3",
         "source-map-explorer": "^2.5.3"
     }
 }
