@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const smartFeaturesRoutes = require('./routes/smartFeatures');
 require('dotenv').config();
 
 const app = express();
@@ -15,6 +16,9 @@ app.use(cors({
 
 // Body parser middleware
 app.use(express.json());
+
+// Smart features routes
+app.use('/api/smart', smartFeaturesRoutes);
 
 // Basic test route
 app.get('/', (req, res) => {
