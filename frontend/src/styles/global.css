@@ -1,3 +1,10 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 :root {
     --bg-primary: #1a1f2c;
     --bg-secondary: #0a0d14;
@@ -9,13 +16,27 @@
     --success: #42dcd6;
 }
 
+html,
 body {
+    height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
+}
+
+body {
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     color: var(--text-primary);
-    min-height: 100vh;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    position: relative;
+}
+
+#root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
 .glass-container {
