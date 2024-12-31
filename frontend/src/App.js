@@ -17,6 +17,7 @@ import Layout from './components/layout/Layout';
 import ForumList from './components/forum/ForumList';
 import ForumView from './components/forum/ForumView';
 import TopicView from './components/forum/TopicView';
+import Forum from './components/Forum';
 
 function LoadingScreen() {
     return (
@@ -119,6 +120,7 @@ function AppRoutes() {
                         <TopicView />
                     </PrivateRoute>
                 } />
+                <Route path="/forums" element={<Forum />} />
             </Route>
         </Routes>
     );
