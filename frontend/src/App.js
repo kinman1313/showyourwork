@@ -18,6 +18,7 @@ import ForumList from './components/forum/ForumList';
 import ForumView from './components/forum/ForumView';
 import TopicView from './components/forum/TopicView';
 import Forum from './components/Forum';
+import SmartFeatures from './components/smart/SmartFeatures';
 
 function LoadingScreen() {
     return (
@@ -121,6 +122,11 @@ function AppRoutes() {
                     </PrivateRoute>
                 } />
                 <Route path="/forums" element={<Forum />} />
+                <Route path="/smart-features" element={
+                    <PrivateRoute>
+                        <SmartFeatures />
+                    </PrivateRoute>
+                } />
             </Route>
         </Routes>
     );
