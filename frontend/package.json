@@ -4,25 +4,23 @@
     "private": true,
     "dependencies": {
         "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-        "@emotion/react": "^11.14.0",
-        "@emotion/styled": "^11.14.0",
-        "@mui/icons-material": "^5.14.20",
+        "@emotion/react": "^11.11.1",
+        "@emotion/styled": "^11.11.0",
         "@mui/material": "^5.14.20",
+        "@mui/icons-material": "^5.14.20",
         "@testing-library/jest-dom": "^5.x.x",
         "@testing-library/react": "^13.x.x",
         "@testing-library/user-event": "^13.x.x",
         "axios": "^1.x.x",
-        "cross-env": "^7.0.3",
         "react": "^18.x.x",
         "react-dom": "^18.x.x",
         "react-router-dom": "^6.x.x",
         "react-scripts": "5.x.x",
-        "react-transition-group": "^4.4.5",
         "web-vitals": "^2.x.x"
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "cross-env CI=false GENERATE_SOURCEMAP=false react-scripts build",
+        "build": "CI=false GENERATE_SOURCEMAP=false react-scripts build",
         "test": "react-scripts test",
         "eject": "react-scripts eject",
         "analyze": "source-map-explorer 'build/static/js/*.js'"
@@ -46,7 +44,6 @@
         ]
     },
     "devDependencies": {
-        "@types/react-transition-group": "^4.4.12",
         "source-map-explorer": "^2.5.3"
     }
 }

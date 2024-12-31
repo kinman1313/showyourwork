@@ -1,230 +1,428 @@
-:root {
-    --bg-color: #121212;
-    --text-color: #ffffff;
-    --primary-color: #1e90ff;
-    --error-color: #ff4757;
-    --completed-opacity: 0.7;
-    --input-bg: rgba(255, 255, 255, 0.1);
-    --input-bg-focus: rgba(255, 255, 255, 0.2);
-    --border-radius: 8px;
-    --transition: 0.3s ease;
+body {
+
+    margin: 0;
+
+    font-family: 'Arial', sans-serif;
+
+    background-color: #121212;
+
+    color: #ffffff;
+
 }
 
-body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-}
+
 
 .App {
+
     text-align: center;
+
     padding: 20px;
+
 }
+
+
 
 h1 {
-    color: var(--primary-color);
+
+    color: #1e90ff;
+
     margin-bottom: 20px;
+
     font-size: 2.5rem;
+
     animation: fadeIn 1s ease;
+
 }
 
+
+
 @keyframes fadeIn {
+
     from {
+
         opacity: 0;
+
         transform: translateY(-20px);
+
     }
 
     to {
+
         opacity: 1;
+
         transform: translateY(0);
+
     }
+
 }
 
+
+
 form {
+
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     gap: 15px;
+
     margin-bottom: 20px;
+
 }
+
+
 
 input,
 select {
-    width: 300px;
-    padding: 12px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--input-bg);
-    color: var(--text-color);
-    font-size: 16px;
-    transition: background-color var(--transition), transform 0.2s ease;
 
-    &:focus {
-        background-color: var(--input-bg-focus);
-        outline: none;
-        transform: scale(1.02);
-    }
+    width: 300px;
+
+    padding: 12px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background-color: rgba(255, 255, 255, 0.1);
+
+    color: white;
+
+    font-size: 16px;
+
+    transition: background-color 0.3s ease, transform 0.2s ease;
+
 }
+
+
+
+input:focus,
+select:focus {
+
+    background-color: rgba(255, 255, 255, 0.2);
+
+    outline: none;
+
+    transform: scale(1.02);
+
+}
+
+
 
 button {
+
     padding: 12px 24px;
+
     border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--primary-color);
-    color: var(--text-color);
+
+    border-radius: 8px;
+
+    background-color: #1e90ff;
+
+    color: white;
+
     font-size: 16px;
+
     cursor: pointer;
-    transition: background-color var(--transition), transform 0.2s ease;
 
-    &:hover {
-        background-color: #0077cc;
-        transform: scale(1.05);
-    }
+    transition: background-color 0.3s ease, transform 0.2s ease;
 
-    &:active {
-        transform: scale(0.95);
-    }
 }
+
+
+
+button:hover {
+
+    background-color: #0077cc;
+
+    transform: scale(1.05);
+
+}
+
+
+
+button:active {
+
+    transform: scale(0.95);
+
+}
+
+
 
 ul {
+
     list-style-type: none;
+
     padding: 0;
+
     max-width: 600px;
+
     margin: 0 auto;
+
 }
+
+
 
 li {
+
     background-color: rgba(255, 255, 255, 0.1);
+
     padding: 15px;
+
     margin: 10px 0;
+
     border-radius: 10px;
+
     display: flex;
+
     justify-content: space-between;
+
     align-items: center;
+
     animation: slideIn 0.5s ease;
+
 }
 
+
+
 @keyframes slideIn {
+
     from {
+
         opacity: 0;
+
         transform: translateX(-20px);
+
     }
 
     to {
+
         opacity: 1;
+
         transform: translateX(0);
+
     }
+
 }
+
+
 
 li span {
+
     flex: 1;
+
     text-align: left;
+
     margin-right: 10px;
+
 }
+
+
 
 li button {
+
     margin-left: 10px;
+
     background-color: #ff4757;
+
 }
+
+
 
 li button:hover {
+
     background-color: #ff6b81;
+
 }
+
+
 
 .completed {
+
     text-decoration: line-through;
+
     opacity: 0.7;
+
 }
+
+
 
 .spinner-container {
+
     display: flex;
+
     justify-content: center;
+
     align-items: center;
+
     height: 100px;
+
 }
+
+
 
 .spinner {
+
     border: 4px solid rgba(255, 255, 255, 0.3);
+
     border-radius: 50%;
+
     border-top: 4px solid #1e90ff;
+
     width: 40px;
+
     height: 40px;
+
     animation: spin 1s linear infinite;
+
 }
 
+
+
 @keyframes spin {
+
     0% {
+
         transform: rotate(0deg);
+
     }
 
     100% {
+
         transform: rotate(360deg);
+
     }
+
 }
+
+
 
 .home-page {
+
     text-align: center;
+
     padding: 20px;
+
 }
+
+
 
 .registration-form {
+
     background-color: rgba(255, 255, 255, 0.1);
+
     padding: 20px;
+
     border-radius: 10px;
+
     max-width: 400px;
+
     margin: 0 auto;
+
     animation: fadeIn 1s ease;
+
 }
+
+
 
 .registration-form h2 {
+
     margin-top: 0;
+
     font-size: 1.8rem;
+
 }
+
+
 
 .registration-form label {
+
     display: flex;
+
     align-items: center;
+
     gap: 10px;
+
     margin: 10px 0;
+
 }
+
+
 
 .registration-form p {
+
     margin-top: 10px;
+
 }
+
+
 
 .registration-form a {
+
     color: #1e90ff;
+
     text-decoration: none;
+
 }
+
+
 
 .registration-form a:hover {
+
     text-decoration: underline;
+
 }
+
+
 
 .error {
+
     color: #ff4757;
+
     margin-bottom: 10px;
+
 }
+
+
 
 .admin-page {
+
     max-width: 800px;
+
     margin: 0 auto;
+
     padding: 20px;
+
 }
+
+
 
 .admin-section {
+
     background-color: rgba(255, 255, 255, 0.1);
+
     padding: 20px;
+
     border-radius: 10px;
+
     margin-bottom: 20px;
+
     animation: fadeIn 1s ease;
+
 }
 
+
+
 .admin-section h3 {
+
     margin-top: 0;
+
     font-size: 1.5rem;
+
 }
+
+
 
 .chores-list {
     max-width: 800px;
@@ -232,7 +430,7 @@ li button:hover {
 }
 
 .chore-item {
-    background-color: var(--input-bg);
+    background-color: rgba(255, 255, 255, 0.1);
     padding: 15px;
     margin: 10px 0;
     border-radius: 10px;
@@ -240,25 +438,18 @@ li button:hover {
     justify-content: space-between;
     align-items: center;
     animation: slideIn 0.5s ease;
+}
 
-    span {
-        flex: 1;
-        text-align: left;
-        margin-right: 10px;
-    }
+.chore-item span {
+    flex: 1;
+    text-align: left;
+    margin-right: 10px;
+    padding: 0 10px;
+}
 
-    button {
-        margin-left: 10px;
-        background-color: var(--error-color);
-
-        &:hover {
-            background-color: #ff6b81;
-        }
-    }
-
-    &.completed {
-        opacity: var(--completed-opacity);
-    }
+.chore-item.completed {
+    opacity: 0.7;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Add space between the logout and admin buttons */

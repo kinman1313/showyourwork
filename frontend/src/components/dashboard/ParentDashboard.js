@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Grid,
@@ -175,24 +175,19 @@ export default function ParentDashboard() {
         }
     };
 
-    const debouncedHandleFilterChange = useMemo(
-        () => debounce((event) => {
-            const { name, value } = event.target;
-            setFilters(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }, 300),
-        []
-    );
+    const handleFilterChange = (event) => {
+        const { name, value } = event.target;
+        setFilters(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
 
-    const filteredChores = useMemo(() => {
-        return chores.filter(chore => {
-            if (filters.status !== 'all' && chore.status !== filters.status) return false;
-            if (filters.child !== 'all' && chore.assignedTo?._id !== filters.child) return false;
-            return true;
-        });
-    }, [chores, filters]);
+    const filteredChores = chores.filter(chore => {
+        if (filters.status !== 'all' && chore.status !== filters.status) return false;
+        if (filters.child !== 'all' && chore.assignedTo?._id !== filters.child) return false;
+        return true;
+    });
 
     const handleStatusChange = async (choreId, newStatus) => {
         try {
@@ -260,7 +255,7 @@ export default function ParentDashboard() {
                         <Select
                             name="status"
                             value={filters.status}
-                            onChange={debouncedHandleFilterChange}
+                            onChange={handleFilterChange}
                             label="Status"
                             size="small"
                         >
@@ -276,7 +271,7 @@ export default function ParentDashboard() {
                         <Select
                             name="child"
                             value={filters.child}
-                            onChange={debouncedHandleFilterChange}
+                            onChange={handleFilterChange}
                             label="Child"
                             size="small"
                         >
