@@ -1,62 +1,40 @@
 import axios from 'axios';
 
-const API_URL = 'https://showyourwork-backend.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL;
 
+// Create axios instance with default config
 const api = axios.create({
     baseURL: API_URL,
-    timeout: 30000,
     headers: {
         'Content-Type': 'application/json'
-    }
+    },
+    withCredentials: true // Enable sending cookies with requests
 });
 
-// Request interceptor
+// Add request interceptor to include auth token
 api.interceptors.request.use(
     (config) => {
-        // Add token if exists
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-
-        // Log outgoing requests
-        console.log('Request:', {
-            method: config.method,
-            url: config.url,
-            headers: config.headers
-        });
-
         return config;
     },
     (error) => {
-        console.error('Request error:', error);
         return Promise.reject(error);
     }
 );
 
-// Response interceptor
+// Add response interceptor to handle errors
 api.interceptors.response.use(
-    (response) => {
-        console.log('Response:', {
-            status: response.status,
-            url: response.config.url,
-            data: response.data
-        });
-        return response;
-    },
+    (response) => response,
     (error) => {
-        if (error.response) {
-            // Server responded with error
-            console.error('Server error:', {
-                status: error.response.status,
-                data: error.response.data
-            });
-        } else if (error.request) {
-            // Request made but no response
-            console.error('Network error:', error.message);
-        } else {
-            // Error in request configuration
-            console.error('Request config error:', error.message);
+        console.error('API Error:', error);
+        if (error.response?.status === 401) {
+            // Handle unauthorized access
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }
