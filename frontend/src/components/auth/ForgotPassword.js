@@ -1,35 +1,26 @@
 import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import {
-    Container,
-    Box,
-    Typography,
-    TextField,
-    Button,
-    Link,
-    Paper,
-    Alert,
-} from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { Box, Button, TextField, Typography, Container, Alert, Link } from '@mui/material';
+import axios from 'axios';
 
-export default function ForgotPassword() {
+const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
+    const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { forgotPassword } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
 
         try {
-            setMessage('');
-            setError('');
-            setLoading(true);
-            await forgotPassword(email);
-            setMessage('Check your email for password reset instructions');
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/forgot-password`, {
+                email
+            });
+            setSuccess(true);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to reset password');
+            setError(err.response?.data?.error || 'Failed to send reset email');
         } finally {
             setLoading(false);
         }
@@ -45,29 +36,28 @@ export default function ForgotPassword() {
                     alignItems: 'center',
                 }}
             >
-                <Paper
-                    elevation={3}
-                    sx={{
-                        padding: 4,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        width: '100%',
-                    }}
-                >
-                    <Typography component="h1" variant="h5">
-                        Reset Password
-                    </Typography>
-                    {error && (
-                        <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
-                            {error}
+                <Typography component="h1" variant="h5">
+                    Forgot Password
+                </Typography>
+
+                {error && (
+                    <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {success ? (
+                    <Box sx={{ mt: 2, width: '100%' }}>
+                        <Alert severity="success">
+                            Password reset instructions have been sent to your email.
                         </Alert>
-                    )}
-                    {message && (
-                        <Alert severity="success" sx={{ width: '100%', mt: 2 }}>
-                            {message}
-                        </Alert>
-                    )}
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <Link component={RouterLink} to="/login" variant="body2">
+                                Back to Sign In
+                            </Link>
+                        </Box>
+                    </Box>
+                ) : (
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
                         <TextField
                             margin="normal"
@@ -80,6 +70,7 @@ export default function ForgotPassword() {
                             autoFocus
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            disabled={loading}
                         />
                         <Button
                             type="submit"
@@ -88,19 +79,18 @@ export default function ForgotPassword() {
                             sx={{ mt: 3, mb: 2 }}
                             disabled={loading}
                         >
-                            {loading ? 'Sending...' : 'Reset Password'}
+                            {loading ? 'Sending...' : 'Send Reset Link'}
                         </Button>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                        <Box sx={{ textAlign: 'center' }}>
                             <Link component={RouterLink} to="/login" variant="body2">
                                 Back to Sign In
                             </Link>
-                            <Link component={RouterLink} to="/register" variant="body2">
-                                Need an account? Sign Up
-                            </Link>
                         </Box>
                     </Box>
-                </Paper>
+                )}
             </Box>
         </Container>
     );
-} 
+};
+
+export default ForgotPassword; 

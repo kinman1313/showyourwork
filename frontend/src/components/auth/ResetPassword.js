@@ -1,46 +1,37 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
-import {
-    Container,
-    Box,
-    Typography,
-    TextField,
-    Button,
-    Link,
-    Paper,
-    Alert,
-} from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Button, TextField, Typography, Container, Alert } from '@mui/material';
+import axios from 'axios';
 
-export default function ResetPassword() {
+const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    const navigate = useNavigate();
     const { token } = useParams();
-    const { resetPassword } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
 
         if (password !== confirmPassword) {
-            return setError('Passwords do not match');
+            setError('Passwords do not match');
+            return;
         }
 
         try {
-            setError('');
-            setLoading(true);
-            await resetPassword(token, password);
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/reset-password`, {
+                token,
+                newPassword: password
+            });
+
             setSuccess(true);
             setTimeout(() => {
                 navigate('/login');
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to reset password');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -54,29 +45,21 @@ export default function ResetPassword() {
                     alignItems: 'center',
                 }}
             >
-                <Paper
-                    elevation={3}
-                    sx={{
-                        padding: 4,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        width: '100%',
-                    }}
-                >
-                    <Typography component="h1" variant="h5">
-                        Set New Password
-                    </Typography>
-                    {error && (
-                        <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
-                    {success && (
-                        <Alert severity="success" sx={{ width: '100%', mt: 2 }}>
-                            Password reset successful! Redirecting to login...
-                        </Alert>
-                    )}
+                <Typography component="h1" variant="h5">
+                    Reset Password
+                </Typography>
+
+                {error && (
+                    <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {success ? (
+                    <Alert severity="success" sx={{ width: '100%', mt: 2 }}>
+                        Password reset successful! Redirecting to login...
+                    </Alert>
+                ) : (
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
                         <TextField
                             margin="normal"
@@ -86,7 +69,6 @@ export default function ResetPassword() {
                             label="New Password"
                             type="password"
                             id="password"
-                            autoComplete="new-password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -106,18 +88,14 @@ export default function ResetPassword() {
                             fullWidth
                             variant="contained"
                             sx={{ mt: 3, mb: 2 }}
-                            disabled={loading || success}
                         >
-                            {loading ? 'Resetting...' : 'Reset Password'}
+                            Reset Password
                         </Button>
-                        <Box sx={{ textAlign: 'center' }}>
-                            <Link component={RouterLink} to="/login" variant="body2">
-                                Back to Sign In
-                            </Link>
-                        </Box>
                     </Box>
-                </Paper>
+                )}
             </Box>
         </Container>
     );
-} 
+};
+
+export default ResetPassword; 
