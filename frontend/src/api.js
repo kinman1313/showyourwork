@@ -65,4 +65,20 @@ export const getSmartSchedule = () => api.get('/smart/smart-schedule');
 export const adjustWeatherSchedule = (location) => api.post('/smart/weather-adjust', { location });
 export const rotateChores = () => api.post('/smart/rotate');
 
+// Money Management endpoints
+export const getSavingsGoals = () => api.get('/money/savings-goals');
+export const createSavingsGoal = (goalData) => api.post('/money/savings-goals', goalData);
+export const updateSavingsGoal = (id, goalData) => api.patch(`/money/savings-goals/${id}`, goalData);
+
+export const getTransactions = () => api.get('/money/transactions');
+export const createTransaction = (transactionData) => api.post('/money/transactions', transactionData);
+
+export const getLessonProgress = () => api.get('/money/lessons/progress');
+export const updateLessonProgress = (progressData) => api.post('/money/lessons/progress', progressData);
+
+export const getMoneyGoals = () => api.get('/money/goals');
+export const updateMoneyGoals = (goalsData) => api.patch('/money/goals', goalsData);
+
+export const getFinancialSummary = () => api.get('/money/summary');
+
 export default api; 

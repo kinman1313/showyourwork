@@ -22,6 +22,8 @@ import {
     InputLabel,
     Stack,
     Paper,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -37,9 +39,13 @@ import {
     ContentCopy as CopyIcon,
     Refresh as RefreshIcon,
     Group as GroupIcon,
+    Psychology as SmartIcon,
+    AccountBalance as MoneyIcon,
 } from '@mui/icons-material';
 import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
+import SmartFeatures from '../smart/SmartFeatures';
+import MoneyManagement from '../money/MoneyManagement';
 
 export default function ParentDashboard() {
     const [chores, setChores] = useState([]);
@@ -64,6 +70,7 @@ export default function ParentDashboard() {
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({ open: false, chore: null });
     const [familyData, setFamilyData] = useState(null);
     const [inviteCode, setInviteCode] = useState('');
+    const [activeTab, setActiveTab] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -238,6 +245,10 @@ export default function ParentDashboard() {
         }
     };
 
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{
@@ -248,251 +259,181 @@ export default function ParentDashboard() {
                 background: 'rgba(0, 0, 0, 0.6)',
                 p: 2,
                 borderRadius: 2,
-                backdropFilter: 'blur(10px)'
             }}>
-                <Typography variant="h4" component="h1" sx={{ color: 'primary.main' }}>
+                <Typography variant="h4" component="h1" sx={{ color: 'white' }}>
                     Parent Dashboard
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenDialog(true)}
-                    sx={{
-                        background: 'rgba(25, 118, 210, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        '&:hover': {
-                            background: 'rgba(25, 118, 210, 1)',
-                            transform: 'scale(1.05)'
-                        }
-                    }}
-                >
-                    Create Chore
-                </Button>
-            </Box>
-
-            {error && (
-                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-                    {error}
-                </Alert>
-            )}
-
-            {success && (
-                <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-                    {success}
-                </Alert>
-            )}
-
-            {/* Family Management Section */}
-            <Paper sx={{ p: 3, mb: 3, background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <GroupIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant="h6" component="h2">
-                        Family Management
-                    </Typography>
-                </Box>
-
-                <Grid container spacing={3}>
-                    {/* Invite Code Section */}
-                    <Grid item xs={12} md={6}>
-                        <Card sx={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}>
-                            <CardContent>
-                                <Typography variant="h6" gutterBottom>
-                                    Family Invite Code
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                    <Typography variant="h5" component="div" sx={{ fontFamily: 'monospace' }}>
-                                        {inviteCode}
-                                    </Typography>
-                                    <IconButton onClick={copyInviteCode} size="small" color="primary">
-                                        <CopyIcon />
-                                    </IconButton>
-                                    <IconButton onClick={generateNewInviteCode} size="small" color="primary">
-                                        <RefreshIcon />
-                                    </IconButton>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Share this code with family members to join your family group
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    {/* Family Members Section */}
-                    <Grid item xs={12} md={6}>
-                        <Card sx={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}>
-                            <CardContent>
-                                <Typography variant="h6" gutterBottom>
-                                    Family Members
-                                </Typography>
-                                {familyData?.parents && (
-                                    <>
-                                        <Typography variant="subtitle2" color="primary" gutterBottom>
-                                            Parents
-                                        </Typography>
-                                        {familyData.parents.map((parent) => (
-                                            <Typography key={parent._id} variant="body2" sx={{ mb: 1 }}>
-                                                {parent.name} ({parent.email})
-                                            </Typography>
-                                        ))}
-                                    </>
-                                )}
-                                {familyData?.children && (
-                                    <>
-                                        <Typography variant="subtitle2" color="primary" gutterBottom sx={{ mt: 2 }}>
-                                            Children
-                                        </Typography>
-                                        {familyData.children.map((child) => (
-                                            <Typography key={child._id} variant="body2" sx={{ mb: 1 }}>
-                                                {child.name} ({child.email})
-                                            </Typography>
-                                        ))}
-                                    </>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                </Grid>
-            </Paper>
-
-            {/* Filters */}
-            <Box sx={{
-                mb: 3,
-                p: 2,
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: 2,
-                backdropFilter: 'blur(10px)'
-            }}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <FilterIcon sx={{ color: 'primary.main' }} />
-                    <FormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                            name="status"
-                            value={filters.status}
-                            onChange={handleFilterChange}
-                            label="Status"
-                            size="small"
-                        >
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="pending">Pending</MenuItem>
-                            <MenuItem value="in_progress">In Progress</MenuItem>
-                            <MenuItem value="completed">Completed</MenuItem>
-                            <MenuItem value="verified">Verified</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <FormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Child</InputLabel>
-                        <Select
-                            name="child"
-                            value={filters.child}
-                            onChange={handleFilterChange}
-                            label="Child"
-                            size="small"
-                        >
-                            <MenuItem value="all">All</MenuItem>
-                            {children.map((child) => (
-                                <MenuItem key={child._id} value={child._id}>
-                                    {child.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                <Stack direction="row" spacing={2}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setOpenDialog(true)}
+                    >
+                        Add Chore
+                    </Button>
                 </Stack>
             </Box>
 
-            <Grid container spacing={3}>
-                {filteredChores.map((chore) => (
-                    <Grid item xs={12} md={6} key={chore._id}>
-                        <Card sx={{
-                            height: '100%',
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            backdropFilter: 'blur(10px)',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            '&:hover': {
-                                transform: 'translateY(-5px)',
-                                boxShadow: (theme) => `0 8px 16px ${theme.palette.primary.main}40`
-                            }
-                        }}>
-                            <CardContent>
-                                <Typography variant="h6" gutterBottom>
-                                    {chore.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" paragraph>
-                                    {chore.description}
-                                </Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Chip
-                                        icon={getStatusIcon(chore.status)}
-                                        label={chore.status.replace('_', ' ').toUpperCase()}
-                                        color={getStatusColor(chore.status)}
-                                        sx={{ mr: 1 }}
-                                    />
-                                    <Chip
-                                        label={`${chore.points} points`}
-                                        color="primary"
-                                        variant="outlined"
-                                    />
-                                </Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Assigned to: {chore.assignedTo?.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Due: {new Date(chore.dueDate).toLocaleDateString()}
-                                </Typography>
-                            </CardContent>
-                            <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                                {chore.status === 'completed' && (
-                                    <Tooltip title="Verify Completion">
-                                        <IconButton
-                                            onClick={() => handleVerifyChore(chore._id)}
-                                            color="success"
-                                            sx={{
-                                                '&:hover': {
-                                                    transform: 'scale(1.1)',
-                                                    background: 'rgba(46, 125, 50, 0.1)'
-                                                }
-                                            }}
-                                        >
-                                            <CheckIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                                <Tooltip title="Edit Chore">
-                                    <IconButton
-                                        onClick={() => {
-                                            setEditChore(chore);
-                                            setOpenEditDialog(true);
-                                        }}
-                                        color="primary"
-                                        sx={{
-                                            '&:hover': {
-                                                transform: 'scale(1.1)',
-                                                background: 'rgba(25, 118, 210, 0.1)'
-                                            }
-                                        }}
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
+            <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                sx={{ mb: 3 }}
+                variant="scrollable"
+                scrollButtons="auto"
+            >
+                <Tab label="Chores" icon={<TaskAltIcon />} />
+                <Tab label="Smart Features" icon={<SmartIcon />} />
+                <Tab label="Money Management" icon={<MoneyIcon />} />
+            </Tabs>
+
+            {activeTab === 0 && (
+                <>
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item>
+                                <FormControl sx={{ minWidth: 120 }}>
+                                    <InputLabel>Status</InputLabel>
+                                    <Select
+                                        name="status"
+                                        value={filters.status}
+                                        onChange={handleFilterChange}
+                                        label="Status"
                                     >
-                                        <EditIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete Chore">
-                                    <IconButton
-                                        onClick={() => setDeleteConfirmDialog({ open: true, chore })}
-                                        color="error"
-                                        sx={{
-                                            '&:hover': {
-                                                transform: 'scale(1.1)',
-                                                background: 'rgba(211, 47, 47, 0.1)'
-                                            }
-                                        }}
+                                        <MenuItem value="all">All</MenuItem>
+                                        <MenuItem value="pending">Pending</MenuItem>
+                                        <MenuItem value="in_progress">In Progress</MenuItem>
+                                        <MenuItem value="completed">Completed</MenuItem>
+                                        <MenuItem value="verified">Verified</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item>
+                                <FormControl sx={{ minWidth: 120 }}>
+                                    <InputLabel>Child</InputLabel>
+                                    <Select
+                                        name="child"
+                                        value={filters.child}
+                                        onChange={handleFilterChange}
+                                        label="Child"
                                     >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </CardActions>
-                        </Card>
+                                        <MenuItem value="all">All</MenuItem>
+                                        {children.map(child => (
+                                            <MenuItem key={child._id} value={child._id}>
+                                                {child.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                    </Box>
+
+                    <Grid container spacing={3}>
+                        {filteredChores.map((chore) => (
+                            <Grid item xs={12} md={6} key={chore._id}>
+                                <Card sx={{
+                                    height: '100%',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    transition: 'transform 0.2s, box-shadow 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: (theme) => `0 8px 16px ${theme.palette.primary.main}40`
+                                    }
+                                }}>
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom>
+                                            {chore.title}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" paragraph>
+                                            {chore.description}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                            <Chip
+                                                icon={getStatusIcon(chore.status)}
+                                                label={chore.status.replace('_', ' ').toUpperCase()}
+                                                color={getStatusColor(chore.status)}
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Chip
+                                                label={`${chore.points} points`}
+                                                color="primary"
+                                                variant="outlined"
+                                            />
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Assigned to: {chore.assignedTo?.name}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Due: {new Date(chore.dueDate).toLocaleDateString()}
+                                        </Typography>
+                                    </CardContent>
+                                    <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                                        {chore.status === 'completed' && (
+                                            <Tooltip title="Verify Completion">
+                                                <IconButton
+                                                    onClick={() => handleVerifyChore(chore._id)}
+                                                    color="success"
+                                                    sx={{
+                                                        '&:hover': {
+                                                            transform: 'scale(1.1)',
+                                                            background: 'rgba(46, 125, 50, 0.1)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <CheckIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                        <Tooltip title="Edit Chore">
+                                            <IconButton
+                                                onClick={() => {
+                                                    setEditChore(chore);
+                                                    setOpenEditDialog(true);
+                                                }}
+                                                color="primary"
+                                                sx={{
+                                                    '&:hover': {
+                                                        transform: 'scale(1.1)',
+                                                        background: 'rgba(25, 118, 210, 0.1)'
+                                                    }
+                                                }}
+                                            >
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete Chore">
+                                            <IconButton
+                                                onClick={() => setDeleteConfirmDialog({ open: true, chore })}
+                                                color="error"
+                                                sx={{
+                                                    '&:hover': {
+                                                        transform: 'scale(1.1)',
+                                                        background: 'rgba(211, 47, 47, 0.1)'
+                                                    }
+                                                }}
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </CardActions>
+                                </Card>
+                            </Grid>
+                        ))}
                     </Grid>
-                ))}
-            </Grid>
+                </>
+            )}
+
+            {activeTab === 1 && (
+                <SmartFeatures />
+            )}
+
+            {activeTab === 2 && (
+                <MoneyManagement />
+            )}
 
             {/* Create Chore Dialog */}
             <Dialog

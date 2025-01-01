@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const smartFeaturesRoutes = require('./routes/smartFeatures');
 const familyRoutes = require('./routes/family');
+const moneyManagementRoutes = require('./routes/moneyManagement');
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.get('/forums', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/family', familyRoutes);
 app.use('/api/smart', smartFeaturesRoutes);
+app.use('/api/money', moneyManagementRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

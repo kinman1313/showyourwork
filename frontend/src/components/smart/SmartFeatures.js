@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { Card, Button, Row, Col, Alert, Spin, List, Typography } from 'antd';
+import { BulbOutlined, CloudOutlined, SwapOutlined, ScheduleOutlined } from '@ant-design/icons';
 import {
-    Container,
-    Grid,
-    Paper,
-    Typography,
-    Button,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemIcon,
-    CircularProgress,
-    Alert,
-    Box
-} from '@mui/material';
-import {
-    AutoAwesome as SuggestIcon,
-    Schedule as ScheduleIcon,
-    WbSunny as WeatherIcon,
-    Loop as RotateIcon,
-    AutoAwesome
-} from '@mui/icons-material';
-import api from '../../api';
+    getChoreSuggestions,
+    getSmartSchedule,
+    adjustWeatherSchedule,
+    rotateChores
+} from '../../api';
+
+const { Title, Text } = Typography;
 
 const SmartFeatures = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [schedule, setSchedule] = useState(null);
-    const [weatherAdjustments, setWeatherAdjustments] = useState([]);
-    const [rotation, setRotation] = useState(null);
+    const [weatherAdjustments, setWeatherAdjustments] = useState(null);
     const [loading, setLoading] = useState({
         suggestions: false,
         schedule: false,
@@ -35,218 +22,145 @@ const SmartFeatures = () => {
     });
     const [error, setError] = useState(null);
 
-    const fetchSuggestions = async () => {
+    const handleGetSuggestions = async () => {
+        setLoading(prev => ({ ...prev, suggestions: true }));
         try {
-            setLoading(prev => ({ ...prev, suggestions: true }));
-            const response = await api.get('/api/smart/suggestions');
+            const response = await getChoreSuggestions();
             setSuggestions(response.data);
         } catch (err) {
-            setError('Failed to fetch suggestions');
-            console.error(err);
+            setError('Failed to get chore suggestions');
         } finally {
             setLoading(prev => ({ ...prev, suggestions: false }));
         }
     };
 
-    const fetchSmartSchedule = async () => {
+    const handleGetSmartSchedule = async () => {
+        setLoading(prev => ({ ...prev, schedule: true }));
         try {
-            setLoading(prev => ({ ...prev, schedule: true }));
-            const response = await api.get('/api/smart/smart-schedule');
+            const response = await getSmartSchedule();
             setSchedule(response.data);
         } catch (err) {
-            setError('Failed to fetch smart schedule');
-            console.error(err);
+            setError('Failed to generate smart schedule');
         } finally {
             setLoading(prev => ({ ...prev, schedule: false }));
         }
     };
 
-    const checkWeather = async () => {
+    const handleWeatherAdjust = async () => {
+        setLoading(prev => ({ ...prev, weather: true }));
         try {
-            setLoading(prev => ({ ...prev, weather: true }));
-            // Get user's location (you might want to store this in user preferences)
-            const location = 'New York'; // Replace with actual user location
-            const response = await api.post('/api/smart/weather-adjust', { location });
+            // You might want to get the location from user's settings or prompt them
+            const location = 'New York'; // Default location - could be made dynamic
+            const response = await adjustWeatherSchedule(location);
             setWeatherAdjustments(response.data);
         } catch (err) {
-            setError('Failed to check weather adjustments');
-            console.error(err);
+            setError('Failed to adjust schedule for weather');
         } finally {
             setLoading(prev => ({ ...prev, weather: false }));
         }
     };
 
-    const rotateChores = async () => {
+    const handleRotateChores = async () => {
+        setLoading(prev => ({ ...prev, rotation: true }));
         try {
-            setLoading(prev => ({ ...prev, rotation: true }));
-            const response = await api.post('/api/smart/rotate');
-            setRotation(response.data);
+            const response = await rotateChores();
+            // You might want to show a success message or refresh the chores list
+            Alert.success('Chores rotated successfully!');
         } catch (err) {
             setError('Failed to rotate chores');
-            console.error(err);
         } finally {
             setLoading(prev => ({ ...prev, rotation: false }));
         }
     };
 
-    useEffect(() => {
-        fetchSuggestions();
-        fetchSmartSchedule();
-        checkWeather();
-    }, []);
-
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+        <div className="smart-features">
+            <Title level={2}>Smart Features</Title>
+            <Text type="secondary">AI-powered tools to help manage your family's chores</Text>
 
-            <Grid container spacing={3}>
-                {/* AI Suggestions */}
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <SuggestIcon sx={{ mr: 1 }} />
-                            <Typography component="h2" variant="h6" color="primary">
-                                AI Suggestions
-                            </Typography>
-                        </Box>
-                        {loading.suggestions ? (
-                            <CircularProgress />
-                        ) : (
-                            <List>
-                                {suggestions.map((suggestion, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemIcon>
-                                            <AutoAwesome />
-                                        </ListItemIcon>
-                                        <ListItemText primary={suggestion} />
-                                    </ListItem>
-                                ))}
-                            </List>
+            <Row gutter={[16, 16]} style={{ marginTop: '20px' }}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card
+                        title={<><BulbOutlined /> AI Suggestions</>}
+                        loading={loading.suggestions}
+                    >
+                        <Button type="primary" onClick={handleGetSuggestions} block>
+                            Get Suggestions
+                        </Button>
+                        {suggestions.length > 0 && (
+                            <List
+                                style={{ marginTop: '10px' }}
+                                size="small"
+                                dataSource={suggestions}
+                                renderItem={item => <List.Item>{item}</List.Item>}
+                            />
                         )}
-                        <Button
-                            variant="contained"
-                            onClick={fetchSuggestions}
-                            disabled={loading.suggestions}
-                        >
-                            Refresh Suggestions
-                        </Button>
-                    </Paper>
-                </Grid>
+                    </Card>
+                </Col>
 
-                {/* Smart Schedule */}
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <ScheduleIcon sx={{ mr: 1 }} />
-                            <Typography component="h2" variant="h6" color="primary">
-                                Smart Schedule
-                            </Typography>
-                        </Box>
-                        {loading.schedule ? (
-                            <CircularProgress />
-                        ) : schedule ? (
-                            <List>
-                                <ListItem>
-                                    <ListItemText
-                                        primary="Recommended Times"
-                                        secondary={schedule.recommendedTimes.join(', ')}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemText
-                                        primary="Estimated Duration"
-                                        secondary={`${schedule.estimatedDuration} minutes`}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemText
-                                        primary="Priority"
-                                        secondary={schedule.priority}
-                                    />
-                                </ListItem>
-                            </List>
-                        ) : null}
-                        <Button
-                            variant="contained"
-                            onClick={fetchSmartSchedule}
-                            disabled={loading.schedule}
-                        >
-                            Update Schedule
+                <Col xs={24} sm={12} lg={6}>
+                    <Card
+                        title={<><ScheduleOutlined /> Smart Schedule</>}
+                        loading={loading.schedule}
+                    >
+                        <Button type="primary" onClick={handleGetSmartSchedule} block>
+                            Generate Schedule
                         </Button>
-                    </Paper>
-                </Grid>
-
-                {/* Weather Adjustments */}
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <WeatherIcon sx={{ mr: 1 }} />
-                            <Typography component="h2" variant="h6" color="primary">
-                                Weather-Based Adjustments
-                            </Typography>
-                        </Box>
-                        {loading.weather ? (
-                            <CircularProgress />
-                        ) : (
-                            <List>
-                                {weatherAdjustments.map((adjustment, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemText
-                                            primary={adjustment.name}
-                                            secondary={adjustment.note}
-                                        />
-                                    </ListItem>
-                                ))}
-                            </List>
+                        {schedule && (
+                            <div style={{ marginTop: '10px' }}>
+                                <Text>Recommended Times: {schedule.recommendedTimes.join(', ')}</Text>
+                                <br />
+                                <Text>Priority: {schedule.priority}</Text>
+                            </div>
                         )}
-                        <Button
-                            variant="contained"
-                            onClick={checkWeather}
-                            disabled={loading.weather}
-                        >
-                            Check Weather
-                        </Button>
-                    </Paper>
-                </Grid>
+                    </Card>
+                </Col>
 
-                {/* Chore Rotation */}
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <RotateIcon sx={{ mr: 1 }} />
-                            <Typography component="h2" variant="h6" color="primary">
-                                Chore Rotation
-                            </Typography>
-                        </Box>
-                        {loading.rotation ? (
-                            <CircularProgress />
-                        ) : rotation ? (
-                            <List>
-                                {Object.entries(rotation).map(([userId, chore]) => (
-                                    <ListItem key={userId}>
-                                        <ListItemText
-                                            primary={chore.name}
-                                            secondary={`Assigned to: ${userId}`}
-                                        />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        ) : null}
-                        <Button
-                            variant="contained"
-                            onClick={rotateChores}
-                            disabled={loading.rotation}
-                        >
+                <Col xs={24} sm={12} lg={6}>
+                    <Card
+                        title={<><CloudOutlined /> Weather Adjust</>}
+                        loading={loading.weather}
+                    >
+                        <Button type="primary" onClick={handleWeatherAdjust} block>
+                            Check Weather Impact
+                        </Button>
+                        {weatherAdjustments && (
+                            <List
+                                style={{ marginTop: '10px' }}
+                                size="small"
+                                dataSource={weatherAdjustments}
+                                renderItem={item => (
+                                    <List.Item>
+                                        <Text>{item.note}</Text>
+                                    </List.Item>
+                                )}
+                            />
+                        )}
+                    </Card>
+                </Col>
+
+                <Col xs={24} sm={12} lg={6}>
+                    <Card
+                        title={<><SwapOutlined /> Chore Rotation</>}
+                        loading={loading.rotation}
+                    >
+                        <Button type="primary" onClick={handleRotateChores} block>
                             Rotate Chores
                         </Button>
-                    </Paper>
-                </Grid>
-            </Grid>
-        </Container>
+                    </Card>
+                </Col>
+            </Row>
+
+            {error && (
+                <Alert
+                    message={error}
+                    type="error"
+                    closable
+                    onClose={() => setError(null)}
+                    style={{ marginTop: '20px' }}
+                />
+            )}
+        </div>
     );
 };
 
