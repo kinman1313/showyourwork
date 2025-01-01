@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal, message } from 'antd';
+import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal, message, Form, Input, InputNumber, Tag } from 'antd';
 import {
     BankOutlined,
     ReadOutlined,
@@ -94,6 +94,11 @@ const MoneyManagement = () => {
     const [transactions, setTransactions] = useState([]);
     const [summary, setSummary] = useState(null);
     const [lessonProgress, setLessonProgress] = useState({});
+    const [showGoalModal, setShowGoalModal] = useState(false);
+    const [showTransactionModal, setShowTransactionModal] = useState(false);
+    const [showLessonModal, setShowLessonModal] = useState(false);
+    const [showGoalsModal, setShowGoalsModal] = useState(false);
+    const [form] = Form.useForm();
 
     useEffect(() => {
         fetchData();
@@ -141,6 +146,11 @@ const MoneyManagement = () => {
         } catch (error) {
             message.error('Failed to update lesson progress');
         }
+    };
+
+    const handleLessonClick = (lesson) => {
+        setShowLessonModal(true);
+        form.setFieldsValue(lesson);
     };
 
     const darkGlassStyle = {
@@ -209,7 +219,7 @@ const MoneyManagement = () => {
                                 <Card
                                     hoverable
                                     style={cardStyle}
-                                    onClick={() => showLessonModal(lesson)}
+                                    onClick={() => handleLessonClick(lesson)}
                                     bodyStyle={{ color: '#fff' }}
                                 >
                                     <Title level={4} style={{ color: '#fff' }}>{lesson.title}</Title>
@@ -384,6 +394,43 @@ const MoneyManagement = () => {
                         <Text type="success">{selectedLesson.points}</Text>
                     </>
                 )}
+            </Modal>
+
+            <Modal
+                title="Financial Lesson"
+                open={showLessonModal}
+                onCancel={() => {
+                    setShowLessonModal(false);
+                    form.resetFields();
+                }}
+                footer={null}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={async (values) => {
+                        try {
+                            await updateLessonProgress(values);
+                            message.success('Lesson progress updated');
+                            setShowLessonModal(false);
+                            fetchLessonProgress();
+                        } catch (error) {
+                            message.error('Failed to update lesson progress');
+                        }
+                    }}
+                >
+                    <Form.Item name="title" label="Lesson">
+                        <Input disabled />
+                    </Form.Item>
+                    <Form.Item name="progress" label="Progress">
+                        <InputNumber min={0} max={100} style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit">
+                            Update Progress
+                        </Button>
+                    </Form.Item>
+                </Form>
             </Modal>
         </div>
     );
