@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal, message, Form, Input, InputNumber, Tag } from 'antd';
+import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal, message, Form, Input, InputNumber, Tag, Tooltip } from 'antd';
 import {
     BankOutlined,
     ReadOutlined,
     TrophyOutlined,
     DollarOutlined,
-    PlusOutlined
+    PlusOutlined,
+    InstagramOutlined,
+    FacebookOutlined,
+    TwitterOutlined
 } from '@ant-design/icons';
+import { Line, Pie } from '@ant-design/charts';
 import {
     getSavingsGoals,
     createSavingsGoal,
@@ -99,9 +103,15 @@ const MoneyManagement = () => {
     const [showLessonModal, setShowLessonModal] = useState(false);
     const [showGoalsModal, setShowGoalsModal] = useState(false);
     const [form] = Form.useForm();
+    const [chartData, setChartData] = useState({
+        savings: [],
+        spending: [],
+        earnings: []
+    });
 
     useEffect(() => {
         fetchData();
+        generateChartData();
     }, []);
 
     const fetchData = async () => {
@@ -131,6 +141,30 @@ const MoneyManagement = () => {
         }
     };
 
+    const generateChartData = () => {
+        // Generate sample data for charts
+        const last6Months = Array.from({ length: 6 }, (_, i) => {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            return date.toLocaleString('default', { month: 'short' });
+        }).reverse();
+
+        setChartData({
+            savings: last6Months.map((month, i) => ({
+                month,
+                amount: Math.floor(Math.random() * 500) + 100
+            })),
+            spending: last6Months.map((month, i) => ({
+                month,
+                amount: Math.floor(Math.random() * 300) + 50
+            })),
+            earnings: last6Months.map((month, i) => ({
+                month,
+                amount: Math.floor(Math.random() * 600) + 200
+            }))
+        });
+    };
+
     const handleStartLesson = async () => {
         if (!selectedLesson) return;
 
@@ -151,6 +185,25 @@ const MoneyManagement = () => {
     const handleLessonClick = (lesson) => {
         setShowLessonModal(true);
         form.setFieldsValue(lesson);
+    };
+
+    const handleShare = (platform) => {
+        const achievementText = "I'm learning about money management and saving for my goals! 💰 #ShowYourWork #KidsMoney";
+        const url = window.location.href;
+
+        switch (platform) {
+            case 'instagram':
+                window.open(`https://www.instagram.com/share?url=${url}&caption=${encodeURIComponent(achievementText)}`);
+                break;
+            case 'facebook':
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(achievementText)}`);
+                break;
+            case 'twitter':
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(achievementText)}&url=${url}`);
+                break;
+            default:
+                break;
+        }
     };
 
     const darkGlassStyle = {
@@ -175,6 +228,43 @@ const MoneyManagement = () => {
         '& .ant-modal-footer': {
             ...darkGlassStyle,
             borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+    };
+
+    const lineConfig = {
+        data: chartData.savings,
+        xField: 'month',
+        yField: 'amount',
+        point: {
+            size: 5,
+            shape: 'diamond',
+        },
+        label: {
+            style: {
+                fill: '#fff',
+            },
+        },
+        color: '#1890ff',
+        smooth: true,
+    };
+
+    const pieConfig = {
+        data: [
+            { type: 'Savings', value: summary?.totalSavings || 0 },
+            { type: 'Spending', value: summary?.totalSpending || 0 },
+            { type: 'Available', value: summary?.availableFunds || 0 },
+        ],
+        angleField: 'value',
+        colorField: 'type',
+        radius: 0.8,
+        label: {
+            type: 'outer',
+            style: {
+                fill: '#fff',
+            },
+        },
+        theme: {
+            colors10: ['#1890ff', '#f5222d', '#52c41a'],
         },
     };
 
@@ -358,6 +448,72 @@ const MoneyManagement = () => {
                                 </List.Item>
                             )}
                         />
+                    </Card>
+                </TabPane>
+
+                <TabPane
+                    tab={
+                        <span>
+                            <DollarOutlined />
+                            Financial Overview
+                        </span>
+                    }
+                    key="5"
+                >
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} lg={12}>
+                            <Card
+                                title={<Text style={{ color: '#fff' }}>Savings Trend</Text>}
+                                style={cardStyle}
+                                bodyStyle={{ color: '#fff', height: '300px' }}
+                            >
+                                <Line {...lineConfig} />
+                            </Card>
+                        </Col>
+                        <Col xs={24} lg={12}>
+                            <Card
+                                title={<Text style={{ color: '#fff' }}>Money Distribution</Text>}
+                                style={cardStyle}
+                                bodyStyle={{ color: '#fff', height: '300px' }}
+                            >
+                                <Pie {...pieConfig} />
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Card
+                        style={{ ...cardStyle, marginTop: '16px' }}
+                        bodyStyle={{ color: '#fff' }}
+                    >
+                        <Row justify="center" gutter={16}>
+                            <Col>
+                                <Tooltip title="Share on Instagram">
+                                    <Button
+                                        type="text"
+                                        icon={<InstagramOutlined style={{ fontSize: '24px', color: '#fff' }} />}
+                                        onClick={() => handleShare('instagram')}
+                                    />
+                                </Tooltip>
+                            </Col>
+                            <Col>
+                                <Tooltip title="Share on Facebook">
+                                    <Button
+                                        type="text"
+                                        icon={<FacebookOutlined style={{ fontSize: '24px', color: '#fff' }} />}
+                                        onClick={() => handleShare('facebook')}
+                                    />
+                                </Tooltip>
+                            </Col>
+                            <Col>
+                                <Tooltip title="Share on X (Twitter)">
+                                    <Button
+                                        type="text"
+                                        icon={<TwitterOutlined style={{ fontSize: '24px', color: '#fff' }} />}
+                                        onClick={() => handleShare('twitter')}
+                                    />
+                                </Tooltip>
+                            </Col>
+                        </Row>
                     </Card>
                 </TabPane>
             </Tabs>

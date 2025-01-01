@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
+        "@ant-design/charts": "^2.2.6",
         "@ant-design/icons": "^5.5.2",
         "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
         "@emotion/react": "^11.11.1",
