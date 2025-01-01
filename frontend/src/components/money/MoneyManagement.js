@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal } from 'antd';
 import {
-    PiggyBankOutlined,
-    BookOutlined,
+    BankOutlined,
+    ReadOutlined,
     TrophyOutlined,
     DollarOutlined
 } from '@ant-design/icons';
@@ -89,7 +89,7 @@ const MoneyManagement = () => {
                 <TabPane
                     tab={
                         <span>
-                            <BookOutlined />
+                            <ReadOutlined />
                             Financial Education
                         </span>
                     }
@@ -128,7 +128,7 @@ const MoneyManagement = () => {
                 <TabPane
                     tab={
                         <span>
-                            <PiggyBankOutlined />
+                            <BankOutlined />
                             Savings Goals
                         </span>
                     }
