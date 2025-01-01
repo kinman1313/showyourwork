@@ -569,7 +569,7 @@ const MoneyManagement = () => {
                             await updateLessonProgress(values);
                             message.success('Lesson progress updated');
                             setShowLessonModal(false);
-                            fetchLessonProgress();
+                            fetchData();
                         } catch (error) {
                             message.error('Failed to update lesson progress');
                         }
