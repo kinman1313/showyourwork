@@ -34,11 +34,11 @@ api.interceptors.response.use(
 );
 
 // Auth endpoints
-export const login = (credentials) => api.post('/auth/login', credentials);
-export const register = (userData) => api.post('/auth/register', userData);
-export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
-export const resetPassword = (token, password) => api.post(`/auth/reset-password/${token}`, { password });
-export const getCurrentUser = () => api.get('/auth/me');
+export const login = (credentials) => api.post('/api/auth/login', credentials);
+export const register = (userData) => api.post('/api/auth/register', userData);
+export const forgotPassword = (email) => api.post('/api/auth/forgot-password', { email });
+export const resetPassword = (token, password) => api.post(`/api/auth/reset-password/${token}`, { password });
+export const getCurrentUser = () => api.get('/api/auth/me');
 
 // Family endpoints
 export const getFamilyData = () => api.get('/api/family/me/family');
