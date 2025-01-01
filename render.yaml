@@ -5,6 +5,8 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     branch: feature/family-management
+    repo:
+      branch: feature/family-management
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,6 +28,8 @@ services:
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/build
     branch: feature/family-management
+    repo:
+      branch: feature/family-management
     envVars:
       - key: REACT_APP_API_URL
         sync: false
