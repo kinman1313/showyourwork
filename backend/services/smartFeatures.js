@@ -1,178 +1,217 @@
 const OpenAI = require('openai');
-const schedule = require('node-schedule');
 const axios = require('axios');
 const Chore = require('../models/Chore');
+const User = require('../models/User');
 
-const openai = new OpenAI(process.env.OPENAI_API_KEY);
+// Initialize OpenAI with error handling
+let openai;
+try {
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    });
+} catch (error) {
+    console.error('Error initializing OpenAI:', error);
+}
 
 // AI-powered chore suggestions
 async function generateChoreSuggestions(userPreferences, completedChores) {
+    if (!openai) {
+        throw new Error('OpenAI client not initialized');
+    }
+
     try {
         const prompt = `Based on these completed chores: ${JSON.stringify(completedChores)} 
             and user preferences: ${JSON.stringify(userPreferences)}, 
-            suggest 5 age-appropriate household chores. Consider difficulty level and time requirements.`;
+            suggest 5 age-appropriate household chores. Format the response as a JSON array of strings.`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
+            messages: [{
+                role: "system",
+                content: "You are a helpful assistant that suggests age-appropriate chores for children. Keep suggestions practical and safe."
+            },
+            {
+                role: "user",
+                content: prompt
+            }],
+            temperature: 0.7,
+            max_tokens: 200
         });
 
-        return JSON.parse(completion.choices[0].message.content);
+        const suggestions = JSON.parse(completion.choices[0].message.content);
+        return { suggestions };
     } catch (error) {
         console.error('Error generating chore suggestions:', error);
-        throw error;
+        throw new Error('Failed to generate chore suggestions');
     }
 }
 
 // Smart scheduling based on past performance
 async function generateSmartSchedule(userId, choreHistory) {
     try {
-        // Analyze past performance patterns
-        const performanceMetrics = await analyzePerformance(choreHistory);
+        // Get user's completed chores from the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Generate optimal schedule based on metrics
-        const schedule = optimizeSchedule(performanceMetrics);
+        const recentChores = await Chore.find({
+            assignedTo: userId,
+            completedAt: { $gte: thirtyDaysAgo }
+        }).sort('-completedAt');
+
+        // Generate schedule recommendations
+        const schedule = {
+            bestTimes: findPreferredTimes(recentChores),
+            recommendedDays: findPreferredDays(recentChores),
+            estimatedDuration: calculateAverageCompletionTime(recentChores),
+            successRate: calculateSuccessRate(recentChores)
+        };
 
         return schedule;
     } catch (error) {
         console.error('Error generating smart schedule:', error);
-        throw error;
+        throw new Error('Failed to generate smart schedule');
     }
 }
 
 // Weather-aware outdoor chore scheduling
-async function checkWeatherAndAdjustSchedule(location, outdoorChores) {
+async function checkWeatherAndAdjustSchedule(location = 'New York') {
     try {
-        const weatherApiKey = process.env.WEATHER_API_KEY;
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=${weatherApiKey}`;
+        if (!process.env.WEATHER_API_KEY) {
+            throw new Error('Weather API key not configured');
+        }
 
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=${process.env.WEATHER_API_KEY}&units=metric`;
         const response = await axios.get(weatherUrl);
-        const forecast = response.data;
 
-        return adjustChoresBasedOnWeather(outdoorChores, forecast);
+        if (!response.data || !response.data.list) {
+            throw new Error('Invalid weather data received');
+        }
+
+        // Get next 5 days forecast
+        const forecast = response.data.list.slice(0, 5);
+
+        // Generate weather-based recommendations
+        const recommendations = forecast.map(day => ({
+            date: new Date(day.dt * 1000).toLocaleDateString(),
+            suitable: day.weather[0].main !== 'Rain' && day.weather[0].main !== 'Snow',
+            temperature: day.main.temp,
+            conditions: day.weather[0].main,
+            recommendation: getWeatherRecommendation(day)
+        }));
+
+        return { recommendations };
     } catch (error) {
-        console.error('Error checking weather and adjusting schedule:', error);
-        throw error;
+        console.error('Error checking weather:', error);
+        throw new Error('Failed to check weather conditions');
     }
 }
 
 // Automatic chore rotation
 async function rotateChores(familyMembers, chores) {
     try {
-        const rotationSchedule = generateRotationSchedule(familyMembers, chores);
-        await updateChoreAssignments(rotationSchedule);
+        // Get all active family members
+        const activeMembers = familyMembers.filter(member => member.isActive);
+        if (activeMembers.length === 0) {
+            throw new Error('No active family members found');
+        }
+
+        // Create a fair rotation schedule
+        const rotationSchedule = {};
+        chores.forEach((chore, index) => {
+            const assigneeIndex = index % activeMembers.length;
+            const assignee = activeMembers[assigneeIndex];
+
+            if (!rotationSchedule[assignee._id]) {
+                rotationSchedule[assignee._id] = [];
+            }
+            rotationSchedule[assignee._id].push(chore);
+        });
+
+        // Update chore assignments in database
+        for (const [userId, assignedChores] of Object.entries(rotationSchedule)) {
+            for (const chore of assignedChores) {
+                await Chore.findByIdAndUpdate(chore._id, {
+                    assignedTo: userId,
+                    updatedAt: new Date()
+                });
+            }
+        }
+
         return rotationSchedule;
     } catch (error) {
         console.error('Error rotating chores:', error);
-        throw error;
+        throw new Error('Failed to rotate chores');
     }
 }
 
 // Helper functions
-async function analyzePerformance(choreHistory) {
-    // Analyze completion times, patterns, and success rates
-    const metrics = {
-        averageCompletionTime: calculateAverageCompletionTime(choreHistory),
-        preferredTimes: findPreferredTimes(choreHistory),
-        successRate: calculateSuccessRate(choreHistory)
-    };
-    return metrics;
-}
+function findPreferredTimes(chores) {
+    if (!chores.length) return [];
 
-function optimizeSchedule(metrics) {
-    // Create optimized schedule based on performance metrics
-    return {
-        recommendedTimes: metrics.preferredTimes,
-        estimatedDuration: metrics.averageCompletionTime,
-        priority: calculatePriority(metrics.successRate)
-    };
-}
-
-function adjustChoresBasedOnWeather(chores, forecast) {
-    const adjustedSchedule = chores.map(chore => {
-        if (chore.isOutdoor) {
-            const weatherCondition = getWeatherForChoreTime(chore.scheduledTime, forecast);
-            return adjustChoreForWeather(chore, weatherCondition);
+    const timeSlots = chores.reduce((acc, chore) => {
+        if (chore.completedAt) {
+            const hour = new Date(chore.completedAt).getHours();
+            acc[hour] = (acc[hour] || 0) + 1;
         }
-        return chore;
-    });
-    return adjustedSchedule;
-}
-
-function generateRotationSchedule(familyMembers, chores) {
-    // Implement fair rotation algorithm
-    const schedule = {};
-    let choreIndex = 0;
-
-    familyMembers.forEach(member => {
-        schedule[member.id] = chores[choreIndex % chores.length];
-        choreIndex++;
-    });
-
-    return schedule;
-}
-
-async function updateChoreAssignments(schedule) {
-    // Update chore assignments in the database
-    for (const [userId, chore] of Object.entries(schedule)) {
-        await Chore.findByIdAndUpdate(chore.id, { assignedTo: userId });
-    }
-}
-
-// Utility functions
-function calculateAverageCompletionTime(history) {
-    if (!history.length) return 0;
-    const sum = history.reduce((acc, record) => acc + record.completionTime, 0);
-    return sum / history.length;
-}
-
-function findPreferredTimes(history) {
-    // Analyze patterns to find optimal times
-    const timeSlots = history.reduce((acc, record) => {
-        const hour = new Date(record.completedAt).getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
         return acc;
     }, {});
 
     return Object.entries(timeSlots)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 3)
-        .map(([hour]) => parseInt(hour));
+        .map(([hour]) => ({
+            hour: parseInt(hour),
+            period: hour < 12 ? 'AM' : 'PM',
+            displayHour: hour % 12 || 12
+        }));
 }
 
-function calculateSuccessRate(history) {
-    if (!history.length) return 0;
-    const successful = history.filter(record => record.completed).length;
-    return (successful / history.length) * 100;
+function findPreferredDays(chores) {
+    if (!chores.length) return [];
+
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayPreferences = chores.reduce((acc, chore) => {
+        if (chore.completedAt) {
+            const day = new Date(chore.completedAt).getDay();
+            acc[day] = (acc[day] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    return Object.entries(dayPreferences)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([day]) => days[day]);
 }
 
-function calculatePriority(successRate) {
-    if (successRate >= 90) return 'low';
-    if (successRate >= 70) return 'medium';
-    return 'high';
+function calculateAverageCompletionTime(chores) {
+    const completedChores = chores.filter(chore => chore.completionTime);
+    if (!completedChores.length) return 0;
+
+    const sum = completedChores.reduce((acc, chore) => acc + chore.completionTime, 0);
+    return Math.round(sum / completedChores.length);
 }
 
-function getWeatherForChoreTime(scheduledTime, forecast) {
-    // Find the most relevant weather forecast for the scheduled time
-    return forecast.list.find(f =>
-        Math.abs(new Date(f.dt * 1000) - scheduledTime) < 3 * 60 * 60 * 1000
-    );
+function calculateSuccessRate(chores) {
+    if (!chores.length) return 0;
+    const completed = chores.filter(chore => chore.status === 'completed').length;
+    return Math.round((completed / chores.length) * 100);
 }
 
-function adjustChoreForWeather(chore, weather) {
-    const updatedChore = { ...chore };
+function getWeatherRecommendation(weatherData) {
+    const temp = weatherData.main.temp;
+    const condition = weatherData.weather[0].main.toLowerCase();
 
-    if (!weather) return updatedChore;
-
-    // Adjust based on weather conditions
-    if (weather.rain || weather.snow) {
-        updatedChore.status = 'rescheduled';
-        updatedChore.note = 'Rescheduled due to precipitation';
-    } else if (weather.main.temp > 30) { // Temperature in Celsius
-        updatedChore.note = 'Consider doing this chore during cooler hours';
+    if (condition.includes('rain') || condition.includes('snow')) {
+        return 'Reschedule outdoor chores';
     }
-
-    return updatedChore;
+    if (temp > 30) {
+        return 'Schedule outdoor chores for early morning or evening';
+    }
+    if (temp < 5) {
+        return 'Consider indoor alternatives';
+    }
+    return 'Good conditions for outdoor chores';
 }
 
 module.exports = {

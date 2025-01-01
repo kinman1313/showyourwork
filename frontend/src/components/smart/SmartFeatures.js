@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Button, Typography, Space, message } from 'antd';
+import { Card, Row, Col, Button, Typography, Space, message, Modal, List } from 'antd';
 import {
     BulbOutlined,
     CalendarOutlined,
     CloudOutlined,
-    SwapOutlined,
-    AutoComplete
+    SwapOutlined
 } from '@ant-design/icons';
 import {
     getChoreSuggestions,
@@ -24,6 +23,17 @@ const SmartFeatures = () => {
         rotation: false
     });
 
+    const [results, setResults] = useState({
+        suggestions: null,
+        schedule: null,
+        weather: null,
+        rotation: null
+    });
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalContent, setModalContent] = useState(null);
+    const [modalTitle, setModalTitle] = useState('');
+
     const darkGlassStyle = {
         background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(10px)',
@@ -39,11 +49,27 @@ const SmartFeatures = () => {
         },
     };
 
+    const showResults = (title, content) => {
+        setModalTitle(title);
+        setModalContent(content);
+        setModalVisible(true);
+    };
+
     const handleGetSuggestions = async () => {
         try {
             setLoading(prev => ({ ...prev, suggestions: true }));
-            await getChoreSuggestions();
-            message.success('AI has generated new chore suggestions!');
+            const response = await getChoreSuggestions();
+            setResults(prev => ({ ...prev, suggestions: response.data.suggestions }));
+            showResults('AI Suggestions', (
+                <List
+                    dataSource={response.data.suggestions}
+                    renderItem={item => (
+                        <List.Item>
+                            <Text style={{ color: '#fff' }}>{item}</Text>
+                        </List.Item>
+                    )}
+                />
+            ));
         } catch (error) {
             message.error('Failed to get suggestions');
         } finally {
@@ -54,8 +80,44 @@ const SmartFeatures = () => {
     const handleGetSmartSchedule = async () => {
         try {
             setLoading(prev => ({ ...prev, schedule: true }));
-            await getSmartSchedule();
-            message.success('Smart schedule has been generated!');
+            const response = await getSmartSchedule();
+            setResults(prev => ({ ...prev, schedule: response.data }));
+            showResults('Smart Schedule', (
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <div>
+                        <Text strong style={{ color: '#fff' }}>Best Times:</Text>
+                        <List
+                            dataSource={response.data.bestTimes}
+                            renderItem={time => (
+                                <List.Item>
+                                    <Text style={{ color: '#fff' }}>
+                                        {time.displayHour}:00 {time.period}
+                                    </Text>
+                                </List.Item>
+                            )}
+                        />
+                    </div>
+                    <div>
+                        <Text strong style={{ color: '#fff' }}>Recommended Days:</Text>
+                        <List
+                            dataSource={response.data.recommendedDays}
+                            renderItem={day => (
+                                <List.Item>
+                                    <Text style={{ color: '#fff' }}>{day}</Text>
+                                </List.Item>
+                            )}
+                        />
+                    </div>
+                    <div>
+                        <Text strong style={{ color: '#fff' }}>Average Duration:</Text>
+                        <Text style={{ color: '#fff' }}> {response.data.estimatedDuration} minutes</Text>
+                    </div>
+                    <div>
+                        <Text strong style={{ color: '#fff' }}>Success Rate:</Text>
+                        <Text style={{ color: '#fff' }}> {response.data.successRate}%</Text>
+                    </div>
+                </Space>
+            ));
         } catch (error) {
             message.error('Failed to generate smart schedule');
         } finally {
@@ -66,10 +128,28 @@ const SmartFeatures = () => {
     const handleWeatherAdjust = async () => {
         try {
             setLoading(prev => ({ ...prev, weather: true }));
-            await adjustWeatherSchedule();
-            message.success('Schedule adjusted based on weather!');
+            const response = await adjustWeatherSchedule();
+            setResults(prev => ({ ...prev, weather: response.data }));
+            showResults('Weather Recommendations', (
+                <List
+                    dataSource={response.data.recommendations}
+                    renderItem={item => (
+                        <List.Item>
+                            <Space direction="vertical">
+                                <Text strong style={{ color: '#fff' }}>{item.date}</Text>
+                                <Text style={{ color: '#fff' }}>
+                                    {item.conditions}, {item.temperature}°C
+                                </Text>
+                                <Text type={item.suitable ? "success" : "warning"}>
+                                    {item.recommendation}
+                                </Text>
+                            </Space>
+                        </List.Item>
+                    )}
+                />
+            ));
         } catch (error) {
-            message.error('Failed to adjust for weather');
+            message.error('Failed to check weather conditions');
         } finally {
             setLoading(prev => ({ ...prev, weather: false }));
         }
@@ -78,8 +158,29 @@ const SmartFeatures = () => {
     const handleRotateChores = async () => {
         try {
             setLoading(prev => ({ ...prev, rotation: true }));
-            await rotateChores();
-            message.success('Chores have been rotated!');
+            const response = await rotateChores();
+            setResults(prev => ({ ...prev, rotation: response.data }));
+            showResults('Chore Rotation Results', (
+                <List
+                    dataSource={Object.entries(response.data)}
+                    renderItem={([userId, chores]) => (
+                        <List.Item>
+                            <Space direction="vertical">
+                                <Text strong style={{ color: '#fff' }}>Family Member {userId}</Text>
+                                <List
+                                    size="small"
+                                    dataSource={chores}
+                                    renderItem={chore => (
+                                        <List.Item>
+                                            <Text style={{ color: '#fff' }}>{chore.title}</Text>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Space>
+                        </List.Item>
+                    )}
+                />
+            ));
         } catch (error) {
             message.error('Failed to rotate chores');
         } finally {
@@ -198,6 +299,17 @@ const SmartFeatures = () => {
                     </Card>
                 </Col>
             </Row>
+
+            <Modal
+                title={<Text style={{ color: '#fff' }}>{modalTitle}</Text>}
+                open={modalVisible}
+                onCancel={() => setModalVisible(false)}
+                footer={null}
+                style={{ top: 20 }}
+                bodyStyle={{ ...darkGlassStyle, maxHeight: '70vh', overflowY: 'auto' }}
+            >
+                {modalContent}
+            </Modal>
         </div>
     );
 };
