@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const smartFeaturesRoutes = require('./routes/smartFeatures');
+const familyRoutes = require('./routes/family');
+const choresRoutes = require('./routes/chores');
+const authRoutes = require('./routes/auth');
 require('dotenv').config();
 
 const app = express();
@@ -17,8 +19,21 @@ app.use(cors({
 // Body parser middleware
 app.use(express.json());
 
-// Smart features routes
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch(err => {
+    console.error('MongoDB connection error:', err);
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/smart', smartFeaturesRoutes);
+app.use('/api/family', familyRoutes);
+app.use('/api/chores', choresRoutes);
 
 // Basic test route
 app.get('/', (req, res) => {
@@ -28,43 +43,6 @@ app.get('/', (req, res) => {
 // Test environment route
 app.get('/test-env', (req, res) => {
     res.json({ status: 'ok', message: 'Environment test successful' });
-});
-
-// Auth routes
-app.post('/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Temporary test user
-        if (email === 'test@example.com' && password === 'password123') {
-            const token = jwt.sign(
-                { userId: 1 },
-                process.env.JWT_SECRET || 'your-secret-key',
-                { expiresIn: '24h' }
-            );
-
-            return res.json({
-                token,
-                user: { id: 1, email }
-            });
-        }
-
-        res.status(401).json({ error: 'Invalid credentials' });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// Forums route
-app.get('/forums', (req, res) => {
-    // Temporary forum data
-    const forums = [
-        { id: 1, title: 'General Discussion', description: 'General topics' },
-        { id: 2, title: 'Technical Support', description: 'Get help with technical issues' }
-    ];
-
-    res.json(forums);
 });
 
 // Error handling
