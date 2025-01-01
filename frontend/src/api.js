@@ -82,12 +82,12 @@ export const updateMoneyGoals = (goalsData) => api.patch('/money/goals', goalsDa
 export const getFinancialSummary = () => api.get('/money/summary');
 
 // Forum endpoints
-export const getTopics = () => api.get('/forum/topics');
-export const getTopic = (id) => api.get(`/forum/topics/${id}`);
-export const createTopic = (topicData) => api.post('/forum/topics', topicData);
-export const createPost = (topicId, postData) => api.post(`/forum/topics/${topicId}/posts`, postData);
-export const updatePost = (topicId, postId, postData) => api.patch(`/forum/topics/${topicId}/posts/${postId}`, postData);
-export const deletePost = (topicId, postId) => api.delete(`/forum/topics/${topicId}/posts/${postId}`);
-export const likePost = (topicId, postId) => api.post(`/forum/topics/${topicId}/posts/${postId}/like`);
+export const getTopics = () => api.get('/api/forum/topics');
+export const getTopic = (id) => api.get(`/api/forum/topics/${id}`);
+export const createTopic = (topicData) => api.post('/api/forum/topics', topicData);
+export const createPost = (topicId, postData) => api.post(`/api/forum/topics/${topicId}/posts`, postData);
+export const updatePost = (topicId, postId, postData) => api.patch(`/api/forum/topics/${topicId}/posts/${postId}`, postData);
+export const deletePost = (topicId, postId) => api.delete(`/api/forum/topics/${topicId}/posts/${postId}`);
+export const likePost = (topicId, postId) => api.post(`/api/forum/topics/${topicId}/posts/${postId}/like`);
 
 export default api; 
