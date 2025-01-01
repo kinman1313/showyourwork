@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Typography, Tabs, List, Progress, Button, Modal, message } from 'antd';
 import {
     BankOutlined,
     ReadOutlined,
     TrophyOutlined,
-    DollarOutlined
+    DollarOutlined,
+    PlusOutlined
 } from '@ant-design/icons';
+import {
+    getSavingsGoals,
+    createSavingsGoal,
+    updateSavingsGoal,
+    getTransactions,
+    createTransaction,
+    getLessonProgress,
+    updateLessonProgress,
+    getFinancialSummary
+} from '../../api';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -74,18 +85,104 @@ const challenges = [
 const MoneyManagement = () => {
     const [selectedLesson, setSelectedLesson] = useState(null);
     const [lessonModalVisible, setLessonModalVisible] = useState(false);
+    const [loading, setLoading] = useState({
+        lessons: false,
+        savings: false,
+        challenges: false
+    });
+    const [savingsGoals, setSavingsGoals] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [summary, setSummary] = useState(null);
+    const [lessonProgress, setLessonProgress] = useState({});
 
-    const showLessonModal = (lesson) => {
-        setSelectedLesson(lesson);
-        setLessonModalVisible(true);
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading({ lessons: true, savings: true, challenges: true });
+            const [goalsRes, transactionsRes, summaryRes, progressRes] = await Promise.all([
+                getSavingsGoals(),
+                getTransactions(),
+                getFinancialSummary(),
+                getLessonProgress()
+            ]);
+
+            setSavingsGoals(goalsRes.data);
+            setTransactions(transactionsRes.data);
+            setSummary(summaryRes.data);
+
+            // Convert lesson progress array to object for easier lookup
+            const progressObj = {};
+            progressRes.data.forEach(p => {
+                progressObj[p.lessonId] = p;
+            });
+            setLessonProgress(progressObj);
+        } catch (error) {
+            message.error('Failed to load money management data');
+        } finally {
+            setLoading({ lessons: false, savings: false, challenges: false });
+        }
+    };
+
+    const handleStartLesson = async () => {
+        if (!selectedLesson) return;
+
+        try {
+            await updateLessonProgress({
+                lessonId: selectedLesson.title,
+                completed: true,
+                pointsEarned: selectedLesson.points
+            });
+            message.success(`Completed ${selectedLesson.title} and earned ${selectedLesson.points} points!`);
+            setLessonModalVisible(false);
+            fetchData(); // Refresh data
+        } catch (error) {
+            message.error('Failed to update lesson progress');
+        }
+    };
+
+    const darkGlassStyle = {
+        background: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+    };
+
+    const cardStyle = {
+        ...darkGlassStyle,
+        height: '100%',
+    };
+
+    const modalStyle = {
+        ...darkGlassStyle,
+        '& .ant-modal-content': darkGlassStyle,
+        '& .ant-modal-header': {
+            ...darkGlassStyle,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+        '& .ant-modal-footer': {
+            ...darkGlassStyle,
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        },
     };
 
     return (
         <div className="money-management">
-            <Title level={2}>Money Management</Title>
+            <Title level={2} style={{ color: '#fff' }}>Money Management</Title>
             <Text type="secondary">Learn about money, saving, and smart spending</Text>
 
-            <Tabs defaultActiveKey="1" style={{ marginTop: '20px' }}>
+            <Tabs
+                defaultActiveKey="1"
+                style={{
+                    marginTop: '20px',
+                    '& .ant-tabs-nav': {
+                        ...darkGlassStyle,
+                        marginBottom: '20px'
+                    }
+                }}
+            >
                 <TabPane
                     tab={
                         <span>
@@ -96,6 +193,7 @@ const MoneyManagement = () => {
                     key="1"
                 >
                     <List
+                        loading={loading.lessons}
                         grid={{
                             gutter: 16,
                             xs: 1,
@@ -110,15 +208,22 @@ const MoneyManagement = () => {
                             <List.Item>
                                 <Card
                                     hoverable
+                                    style={cardStyle}
                                     onClick={() => showLessonModal(lesson)}
+                                    bodyStyle={{ color: '#fff' }}
                                 >
-                                    <Title level={4}>{lesson.title}</Title>
-                                    <Paragraph>{lesson.content}</Paragraph>
+                                    <Title level={4} style={{ color: '#fff' }}>{lesson.title}</Title>
+                                    <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{lesson.content}</Paragraph>
                                     <Text type="secondary">Level: {lesson.level}</Text>
                                     <br />
                                     <Text type="secondary">Duration: {lesson.duration}</Text>
                                     <br />
                                     <Text type="success">Earn {lesson.points} points</Text>
+                                    {lessonProgress[lesson.title]?.completed && (
+                                        <div style={{ marginTop: '10px' }}>
+                                            <Text type="success">✓ Completed</Text>
+                                        </div>
+                                    )}
                                 </Card>
                             </List.Item>
                         )}
@@ -136,20 +241,35 @@ const MoneyManagement = () => {
                 >
                     <Row gutter={[16, 16]}>
                         <Col xs={24} sm={12}>
-                            <Card title="Current Savings">
-                                <Title level={2}>$45.00</Title>
-                                <Progress percent={45} status="active" />
+                            <Card
+                                title={<Text style={{ color: '#fff' }}>Current Savings</Text>}
+                                style={cardStyle}
+                                bodyStyle={{ color: '#fff' }}
+                            >
+                                <Title level={2} style={{ color: '#fff' }}>${summary?.totalSavings || '0.00'}</Title>
+                                <Progress
+                                    percent={summary?.totalSavings ? (summary.totalSavings / 100) * 100 : 0}
+                                    status="active"
+                                    strokeColor={{
+                                        '0%': '#108ee9',
+                                        '100%': '#87d068',
+                                    }}
+                                />
                                 <Text type="secondary">Goal: $100.00</Text>
                             </Card>
                         </Col>
                         <Col xs={24} sm={12}>
-                            <Card title="Money Tips">
+                            <Card
+                                title={<Text style={{ color: '#fff' }}>Money Tips</Text>}
+                                style={cardStyle}
+                                bodyStyle={{ color: '#fff' }}
+                            >
                                 <List
                                     size="small"
                                     dataSource={moneyTips}
                                     renderItem={tip => (
                                         <List.Item>
-                                            <Text>{tip}</Text>
+                                            <Text style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{tip}</Text>
                                         </List.Item>
                                     )}
                                 />
@@ -168,6 +288,7 @@ const MoneyManagement = () => {
                     key="3"
                 >
                     <List
+                        loading={loading.challenges}
                         grid={{
                             gutter: 16,
                             xs: 1,
@@ -180,9 +301,12 @@ const MoneyManagement = () => {
                         dataSource={challenges}
                         renderItem={challenge => (
                             <List.Item>
-                                <Card>
-                                    <Title level={4}>{challenge.title}</Title>
-                                    <Paragraph>{challenge.description}</Paragraph>
+                                <Card
+                                    style={cardStyle}
+                                    bodyStyle={{ color: '#fff' }}
+                                >
+                                    <Title level={4} style={{ color: '#fff' }}>{challenge.title}</Title>
+                                    <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>{challenge.description}</Paragraph>
                                     <Text type="secondary">Duration: {challenge.duration}</Text>
                                     <br />
                                     <Text type="success">Reward: {challenge.reward} points</Text>
@@ -205,21 +329,22 @@ const MoneyManagement = () => {
                     }
                     key="4"
                 >
-                    <Card title="Recent Earnings">
+                    <Card
+                        title={<Text style={{ color: '#fff' }}>Recent Earnings</Text>}
+                        style={cardStyle}
+                        bodyStyle={{ color: '#fff' }}
+                    >
                         <List
+                            loading={loading.transactions}
                             size="large"
-                            dataSource={[
-                                { date: '2023-11-01', amount: 5.00, source: 'Completed Chores' },
-                                { date: '2023-11-03', amount: 10.00, source: 'Weekly Allowance' },
-                                { date: '2023-11-05', amount: 3.00, source: 'Extra Help' },
-                            ]}
+                            dataSource={transactions}
                             renderItem={item => (
                                 <List.Item>
                                     <List.Item.Meta
-                                        title={`$${item.amount.toFixed(2)}`}
-                                        description={item.source}
+                                        title={<Text style={{ color: '#fff' }}>${item.amount.toFixed(2)}</Text>}
+                                        description={<Text type="secondary">{item.description}</Text>}
                                     />
-                                    <Text type="secondary">{item.date}</Text>
+                                    <Text type="secondary">{new Date(item.date).toLocaleDateString()}</Text>
                                 </List.Item>
                             )}
                         />
@@ -229,28 +354,34 @@ const MoneyManagement = () => {
 
             <Modal
                 title={selectedLesson?.title}
-                visible={lessonModalVisible}
+                open={lessonModalVisible}
                 onCancel={() => setLessonModalVisible(false)}
+                style={modalStyle}
                 footer={[
                     <Button key="back" onClick={() => setLessonModalVisible(false)}>
                         Close
                     </Button>,
-                    <Button key="start" type="primary">
-                        Start Lesson
+                    <Button
+                        key="start"
+                        type="primary"
+                        onClick={handleStartLesson}
+                        disabled={lessonProgress[selectedLesson?.title]?.completed}
+                    >
+                        {lessonProgress[selectedLesson?.title]?.completed ? 'Completed' : 'Start Lesson'}
                     </Button>
                 ]}
             >
                 {selectedLesson && (
                     <>
-                        <Paragraph>{selectedLesson.content}</Paragraph>
-                        <Text strong>Level: </Text>
-                        <Text>{selectedLesson.level}</Text>
+                        <Paragraph style={{ color: '#fff' }}>{selectedLesson.content}</Paragraph>
+                        <Text strong style={{ color: '#fff' }}>Level: </Text>
+                        <Text type="secondary">{selectedLesson.level}</Text>
                         <br />
-                        <Text strong>Duration: </Text>
-                        <Text>{selectedLesson.duration}</Text>
+                        <Text strong style={{ color: '#fff' }}>Duration: </Text>
+                        <Text type="secondary">{selectedLesson.duration}</Text>
                         <br />
-                        <Text strong>Points: </Text>
-                        <Text>{selectedLesson.points}</Text>
+                        <Text strong style={{ color: '#fff' }}>Points: </Text>
+                        <Text type="success">{selectedLesson.points}</Text>
                     </>
                 )}
             </Modal>
