@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const smartFeaturesRoutes = require('./routes/smartFeatures');
+const familyRoutes = require('./routes/family');
 
 const app = express();
 
@@ -64,7 +65,9 @@ app.get('/forums', (req, res) => {
     res.json(forums);
 });
 
-// Smart features routes
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/family', familyRoutes);
 app.use('/api/smart', smartFeaturesRoutes);
 
 // Error handling

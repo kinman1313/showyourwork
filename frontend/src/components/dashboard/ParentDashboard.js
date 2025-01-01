@@ -21,6 +21,7 @@ import {
     FormControl,
     InputLabel,
     Stack,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -33,6 +34,9 @@ import {
     FilterList as FilterIcon,
     DoneAll as DoneAllIcon,
     TaskAlt as TaskAltIcon,
+    ContentCopy as CopyIcon,
+    Refresh as RefreshIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import api from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,6 +46,7 @@ export default function ParentDashboard() {
     const [children, setChildren] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const { loading } = useAuth();
     const [newChore, setNewChore] = useState({
         title: '',
@@ -57,9 +62,12 @@ export default function ParentDashboard() {
         child: 'all'
     });
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({ open: false, chore: null });
+    const [familyData, setFamilyData] = useState(null);
+    const [inviteCode, setInviteCode] = useState('');
 
     useEffect(() => {
         fetchData();
+        fetchFamilyData();
     }, []);
 
     const fetchData = async () => {
@@ -75,6 +83,34 @@ export default function ParentDashboard() {
             console.error('Dashboard fetch error:', err);
             setError('Failed to fetch dashboard data');
         }
+    };
+
+    const fetchFamilyData = async () => {
+        try {
+            const response = await api.get('/api/auth/me/family');
+            setFamilyData(response.data);
+            setInviteCode(response.data.inviteCode);
+        } catch (err) {
+            console.error('Family data fetch error:', err);
+            setError('Failed to fetch family data');
+        }
+    };
+
+    const generateNewInviteCode = async () => {
+        try {
+            const response = await api.post('/api/family/invite-code');
+            setInviteCode(response.data.inviteCode);
+            setSuccess('New invite code generated successfully');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError('Failed to generate new invite code');
+        }
+    };
+
+    const copyInviteCode = () => {
+        navigator.clipboard.writeText(inviteCode);
+        setSuccess('Invite code copied to clipboard');
+        setTimeout(() => setSuccess(''), 3000);
     };
 
     const handleCreateChore = async () => {
@@ -235,10 +271,88 @@ export default function ParentDashboard() {
             </Box>
 
             {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
                     {error}
                 </Alert>
             )}
+
+            {success && (
+                <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+                    {success}
+                </Alert>
+            )}
+
+            {/* Family Management Section */}
+            <Paper sx={{ p: 3, mb: 3, background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <GroupIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" component="h2">
+                        Family Management
+                    </Typography>
+                </Box>
+
+                <Grid container spacing={3}>
+                    {/* Invite Code Section */}
+                    <Grid item xs={12} md={6}>
+                        <Card sx={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    Family Invite Code
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                    <Typography variant="h5" component="div" sx={{ fontFamily: 'monospace' }}>
+                                        {inviteCode}
+                                    </Typography>
+                                    <IconButton onClick={copyInviteCode} size="small" color="primary">
+                                        <CopyIcon />
+                                    </IconButton>
+                                    <IconButton onClick={generateNewInviteCode} size="small" color="primary">
+                                        <RefreshIcon />
+                                    </IconButton>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Share this code with family members to join your family group
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Family Members Section */}
+                    <Grid item xs={12} md={6}>
+                        <Card sx={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                    Family Members
+                                </Typography>
+                                {familyData?.parents && (
+                                    <>
+                                        <Typography variant="subtitle2" color="primary" gutterBottom>
+                                            Parents
+                                        </Typography>
+                                        {familyData.parents.map((parent) => (
+                                            <Typography key={parent._id} variant="body2" sx={{ mb: 1 }}>
+                                                {parent.name} ({parent.email})
+                                            </Typography>
+                                        ))}
+                                    </>
+                                )}
+                                {familyData?.children && (
+                                    <>
+                                        <Typography variant="subtitle2" color="primary" gutterBottom sx={{ mt: 2 }}>
+                                            Children
+                                        </Typography>
+                                        {familyData.children.map((child) => (
+                                            <Typography key={child._id} variant="body2" sx={{ mb: 1 }}>
+                                                {child.name} ({child.email})
+                                            </Typography>
+                                        ))}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Paper>
 
             {/* Filters */}
             <Box sx={{
