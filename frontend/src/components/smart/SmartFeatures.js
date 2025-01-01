@@ -17,9 +17,10 @@ import {
     AutoAwesome as SuggestIcon,
     Schedule as ScheduleIcon,
     WbSunny as WeatherIcon,
-    Loop as RotateIcon
+    Loop as RotateIcon,
+    AutoAwesome
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../api';
 
 const SmartFeatures = () => {
     const [suggestions, setSuggestions] = useState([]);
@@ -37,7 +38,7 @@ const SmartFeatures = () => {
     const fetchSuggestions = async () => {
         try {
             setLoading(prev => ({ ...prev, suggestions: true }));
-            const response = await axios.get('/api/smart/suggestions');
+            const response = await api.get('/api/smart/suggestions');
             setSuggestions(response.data);
         } catch (err) {
             setError('Failed to fetch suggestions');
@@ -50,7 +51,7 @@ const SmartFeatures = () => {
     const fetchSmartSchedule = async () => {
         try {
             setLoading(prev => ({ ...prev, schedule: true }));
-            const response = await axios.get('/api/smart/smart-schedule');
+            const response = await api.get('/api/smart/smart-schedule');
             setSchedule(response.data);
         } catch (err) {
             setError('Failed to fetch smart schedule');
@@ -65,7 +66,7 @@ const SmartFeatures = () => {
             setLoading(prev => ({ ...prev, weather: true }));
             // Get user's location (you might want to store this in user preferences)
             const location = 'New York'; // Replace with actual user location
-            const response = await axios.post('/api/smart/weather-adjust', { location });
+            const response = await api.post('/api/smart/weather-adjust', { location });
             setWeatherAdjustments(response.data);
         } catch (err) {
             setError('Failed to check weather adjustments');
@@ -78,7 +79,7 @@ const SmartFeatures = () => {
     const rotateChores = async () => {
         try {
             setLoading(prev => ({ ...prev, rotation: true }));
-            const response = await axios.post('/api/smart/rotate');
+            const response = await api.post('/api/smart/rotate');
             setRotation(response.data);
         } catch (err) {
             setError('Failed to rotate chores');
