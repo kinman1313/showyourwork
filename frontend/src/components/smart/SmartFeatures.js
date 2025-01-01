@@ -207,7 +207,7 @@ const SmartFeatures = () => {
                                 AI Suggestions
                             </Title>
                             <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                                Get personalized chore suggestions based on your family's patterns and preferences.
+                                Get personalized chore suggestions based on patterns and preferences.
                             </Paragraph>
                             <Button
                                 type="primary"
@@ -215,7 +215,7 @@ const SmartFeatures = () => {
                                 loading={loading.suggestions}
                                 style={{ width: '100%' }}
                             >
-                                Get Suggestions
+                                Suggestions
                             </Button>
                         </Space>
                     </Card>
