@@ -2,11 +2,11 @@ services:
   - type: web
     name: showyourwork-backend
     env: node
+    repo:
+      url: https://github.com/kinman1313/showyourwork
+      branch: feature/family-management
     buildCommand: npm install
     startCommand: node server.js
-    branch: feature/family-management
-    repo:
-      branch: feature/family-management
     envVars:
       - key: NODE_ENV
         value: production
@@ -25,11 +25,11 @@ services:
 
   - type: static
     name: showyourwork-frontend
+    repo:
+      url: https://github.com/kinman1313/showyourwork
+      branch: feature/family-management
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/build
-    branch: feature/family-management
-    repo:
-      branch: feature/family-management
     envVars:
       - key: REACT_APP_API_URL
         sync: false
