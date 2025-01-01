@@ -12,6 +12,7 @@ import {
     adjustWeatherSchedule,
     rotateChores
 } from '../../api';
+import { colors, cardStyles, buttonStyles, modalStyles, gradients } from '../../styles/theme';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,20 +35,44 @@ const SmartFeatures = () => {
     const [modalContent, setModalContent] = useState(null);
     const [modalTitle, setModalTitle] = useState('');
 
-    const darkGlassStyle = {
-        background: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '8px',
-    };
-
-    const cardStyle = {
-        ...darkGlassStyle,
-        height: '100%',
-        '& .ant-card-head': {
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    const featureCards = [
+        {
+            icon: <BulbOutlined style={{ fontSize: '32px', color: colors.primary, filter: 'drop-shadow(0 0 10px rgba(24, 144, 255, 0.5))' }} />,
+            title: 'AI Suggestions',
+            description: 'Get personalized chore suggestions based on patterns and preferences.',
+            action: handleGetSuggestions,
+            loading: loading.suggestions,
+            buttonText: 'Suggestions',
+            gradient: gradients.primary
         },
-    };
+        {
+            icon: <CalendarOutlined style={{ fontSize: '32px', color: colors.success, filter: 'drop-shadow(0 0 10px rgba(82, 196, 26, 0.5))' }} />,
+            title: 'Smart Schedule',
+            description: 'Generate an optimized schedule based on everyone\'s availability and preferences.',
+            action: handleGetSmartSchedule,
+            loading: loading.schedule,
+            buttonText: 'Generate Schedule',
+            gradient: gradients.success
+        },
+        {
+            icon: <CloudOutlined style={{ fontSize: '32px', color: colors.warning, filter: 'drop-shadow(0 0 10px rgba(250, 173, 20, 0.5))' }} />,
+            title: 'Weather Aware',
+            description: 'Automatically adjust outdoor chores based on weather conditions.',
+            action: handleWeatherAdjust,
+            loading: loading.weather,
+            buttonText: 'Check Weather',
+            gradient: gradients.warning
+        },
+        {
+            icon: <SwapOutlined style={{ fontSize: '32px', color: colors.danger, filter: 'drop-shadow(0 0 10px rgba(255, 77, 79, 0.5))' }} />,
+            title: 'Chore Rotation',
+            description: 'Automatically rotate chores among family members for fairness.',
+            action: handleRotateChores,
+            loading: loading.rotation,
+            buttonText: 'Rotate Chores',
+            gradient: gradients.danger
+        }
+    ];
 
     const showResults = (title, content) => {
         setModalTitle(title);
@@ -190,123 +215,95 @@ const SmartFeatures = () => {
 
     return (
         <div className="smart-features">
-            <Title level={2} style={{ color: '#fff', marginBottom: '24px' }}>
+            <Title level={2} style={{
+                color: colors.text.primary,
+                marginBottom: '32px',
+                textAlign: 'center',
+                fontSize: '2.5rem',
+                fontWeight: '600',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
                 Smart Features
             </Title>
 
-            <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        style={cardStyle}
-                        bodyStyle={{ color: '#fff' }}
-                    >
-                        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                            <BulbOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                            <Title level={4} style={{ color: '#fff', margin: 0 }}>
-                                AI Suggestions
-                            </Title>
-                            <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                                Get personalized chore suggestions based on patterns and preferences.
-                            </Paragraph>
-                            <Button
-                                type="primary"
-                                onClick={handleGetSuggestions}
-                                loading={loading.suggestions}
-                                style={{ width: '100%' }}
-                            >
-                                Suggestions
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        style={cardStyle}
-                        bodyStyle={{ color: '#fff' }}
-                    >
-                        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                            <CalendarOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
-                            <Title level={4} style={{ color: '#fff', margin: 0 }}>
-                                Smart Schedule
-                            </Title>
-                            <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                                Generate an optimized schedule based on everyone's availability and preferences.
-                            </Paragraph>
-                            <Button
-                                type="primary"
-                                onClick={handleGetSmartSchedule}
-                                loading={loading.schedule}
-                                style={{ width: '100%' }}
-                            >
-                                Generate Schedule
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        style={cardStyle}
-                        bodyStyle={{ color: '#fff' }}
-                    >
-                        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                            <CloudOutlined style={{ fontSize: '24px', color: '#faad14' }} />
-                            <Title level={4} style={{ color: '#fff', margin: 0 }}>
-                                Weather Aware
-                            </Title>
-                            <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                                Automatically adjust outdoor chores based on weather conditions.
-                            </Paragraph>
-                            <Button
-                                type="primary"
-                                onClick={handleWeatherAdjust}
-                                loading={loading.weather}
-                                style={{ width: '100%' }}
-                            >
-                                Check Weather
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
-
-                <Col xs={24} sm={12} lg={6}>
-                    <Card
-                        hoverable
-                        style={cardStyle}
-                        bodyStyle={{ color: '#fff' }}
-                    >
-                        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                            <SwapOutlined style={{ fontSize: '24px', color: '#ff4d4f' }} />
-                            <Title level={4} style={{ color: '#fff', margin: 0 }}>
-                                Chore Rotation
-                            </Title>
-                            <Paragraph style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                                Automatically rotate chores among family members for fairness.
-                            </Paragraph>
-                            <Button
-                                type="primary"
-                                onClick={handleRotateChores}
-                                loading={loading.rotation}
-                                style={{ width: '100%' }}
-                            >
-                                Rotate Chores
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
+            <Row gutter={[24, 24]}>
+                {featureCards.map((card, index) => (
+                    <Col xs={24} sm={12} lg={6} key={index}>
+                        <Card
+                            hoverable
+                            style={{
+                                ...cardStyles,
+                                background: `linear-gradient(135deg, ${colors.background.glass} 0%, ${colors.background.dark} 100%)`
+                            }}
+                            bodyStyle={{
+                                padding: '24px',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}
+                        >
+                            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                                <div style={{
+                                    textAlign: 'center',
+                                    marginBottom: '16px',
+                                    padding: '16px',
+                                    background: card.gradient,
+                                    borderRadius: '50%',
+                                    width: '64px',
+                                    height: '64px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto'
+                                }}>
+                                    {card.icon}
+                                </div>
+                                <Title level={4} style={{
+                                    color: colors.text.primary,
+                                    margin: '0',
+                                    textAlign: 'center',
+                                    fontSize: '1.5rem'
+                                }}>
+                                    {card.title}
+                                </Title>
+                                <Paragraph style={{
+                                    color: colors.text.secondary,
+                                    textAlign: 'center',
+                                    fontSize: '1rem',
+                                    flex: 1
+                                }}>
+                                    {card.description}
+                                </Paragraph>
+                                <Button
+                                    type="primary"
+                                    onClick={card.action}
+                                    loading={card.loading}
+                                    style={{
+                                        ...buttonStyles,
+                                        width: '100%',
+                                        background: card.gradient,
+                                        border: 'none'
+                                    }}
+                                >
+                                    {card.buttonText}
+                                </Button>
+                            </Space>
+                        </Card>
+                    </Col>
+                ))}
             </Row>
 
             <Modal
-                title={<Text style={{ color: '#fff' }}>{modalTitle}</Text>}
+                title={<Text style={{ color: colors.text.primary }}>{modalTitle}</Text>}
                 open={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 footer={null}
                 style={{ top: 20 }}
-                bodyStyle={{ ...darkGlassStyle, maxHeight: '70vh', overflowY: 'auto' }}
+                bodyStyle={{
+                    ...modalStyles.content,
+                    background: `linear-gradient(135deg, ${colors.background.glass} 0%, ${colors.background.dark} 100%)`
+                }}
+                width={800}
             >
                 {modalContent}
             </Modal>
