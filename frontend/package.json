@@ -11,6 +11,7 @@
         "@testing-library/jest-dom": "^5.x.x",
         "@testing-library/react": "^13.x.x",
         "@testing-library/user-event": "^13.x.x",
+        "antd": "^5.22.7",
         "axios": "^1.x.x",
         "cross-env": "^7.0.3",
         "react": "^18.x.x",
