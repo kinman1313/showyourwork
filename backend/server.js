@@ -6,6 +6,7 @@ require('dotenv').config();
 const smartFeaturesRoutes = require('./routes/smartFeatures');
 const familyRoutes = require('./routes/family');
 const moneyManagementRoutes = require('./routes/moneyManagement');
+const forumRoutes = require('./routes/forum');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/family', familyRoutes);
 app.use('/api/smart', smartFeaturesRoutes);
 app.use('/api/money', moneyManagementRoutes);
+app.use('/api/forum', forumRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

@@ -1,204 +1,217 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Box,
+    List,
     Card,
-    CardContent,
-    Typography,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    FormControlLabel,
-    Switch,
-    Grid,
-    Chip,
-    Alert,
-    LinearProgress,
-} from '@mui/material';
+    Typography,
+    Space,
+    Tag,
+    Modal,
+    Form,
+    Input,
+    Select,
+    message
+} from 'antd';
 import {
-    Add as AddIcon,
-    Forum as ForumIcon,
-    Person as PersonIcon,
-    Public as PublicIcon,
-    Lock as LockIcon,
-} from '@mui/icons-material';
-import api from '../../api';
-import { useAuth } from '../../contexts/AuthContext';
+    MessageOutlined,
+    EyeOutlined,
+    PlusOutlined,
+    PushpinOutlined,
+    LockOutlined
+} from '@ant-design/icons';
+import { getTopics, createTopic } from '../../api';
 
-export default function ForumList() {
-    const [forums, setForums] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [openDialog, setOpenDialog] = useState(false);
-    const [newForum, setNewForum] = useState({
-        name: '',
-        description: '',
-        isPrivate: false,
-    });
+const { Title, Text } = Typography;
+const { Option } = Select;
+const { TextArea } = Input;
+
+const ForumList = () => {
+    const [topics, setTopics] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [createModalVisible, setCreateModalVisible] = useState(false);
+    const [form] = Form.useForm();
     const navigate = useNavigate();
-    const { loading: authLoading } = useAuth();
 
     useEffect(() => {
-        fetchForums();
+        fetchTopics();
     }, []);
 
-    const fetchForums = async () => {
+    const fetchTopics = async () => {
         try {
-            const response = await api.get('/forums');
-            setForums(response.data);
-            setIsLoading(false);
-        } catch (err) {
-            setError('Failed to fetch forums');
-            setIsLoading(false);
+            setLoading(true);
+            const response = await getTopics();
+            setTopics(response.data);
+        } catch (error) {
+            message.error('Failed to fetch topics');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleCreateForum = async () => {
+    const handleCreateTopic = async (values) => {
         try {
-            await api.post('/forums', newForum);
-            setOpenDialog(false);
-            setNewForum({ name: '', description: '', isPrivate: false });
-            fetchForums();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to create forum');
+            const response = await createTopic(values);
+            message.success('Topic created successfully');
+            setCreateModalVisible(false);
+            form.resetFields();
+            setTopics([response.data, ...topics]);
+        } catch (error) {
+            message.error('Failed to create topic');
         }
     };
 
-    if (authLoading) return <LinearProgress />;
+    const getCategoryColor = (category) => {
+        switch (category) {
+            case 'announcements': return 'red';
+            case 'help': return 'blue';
+            case 'suggestions': return 'green';
+            default: return 'default';
+        }
+    };
+
+    const darkGlassStyle = {
+        background: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+    };
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{
+        <div className="forum-list">
+            <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                mb: 3,
-                background: 'rgba(0, 0, 0, 0.6)',
-                p: 2,
-                borderRadius: 2,
-                backdropFilter: 'blur(10px)'
+                marginBottom: '20px'
             }}>
-                <Typography variant="h4" component="h1" sx={{ color: 'primary.main' }}>
-                    Forums
-                </Typography>
+                <Title level={2} style={{ color: '#fff', margin: 0 }}>Forum</Title>
                 <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpenDialog(true)}
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setCreateModalVisible(true)}
                 >
-                    Create Forum
+                    New Topic
                 </Button>
-            </Box>
+            </div>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-                    {error}
-                </Alert>
-            )}
-
-            <Grid container spacing={3}>
-                {forums.map((forum) => (
-                    <Grid item xs={12} sm={6} md={4} key={forum._id}>
-                        <Card sx={{
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            background: 'rgba(255, 255, 255, 0.1)',
-                            backdropFilter: 'blur(10px)',
-                            transition: 'transform 0.2s',
-                            cursor: 'pointer',
-                            '&:hover': {
-                                transform: 'scale(1.02)',
-                            }
-                        }} onClick={() => navigate(`/forums/${forum._id}`)}>
-                            <CardContent>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <ForumIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                    <Typography variant="h6" component="div">
-                                        {forum.name}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary" paragraph>
-                                    {forum.description}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                                    <Chip
-                                        icon={forum.isPrivate ? <LockIcon /> : <PublicIcon />}
-                                        label={forum.isPrivate ? 'Private' : 'Public'}
-                                        color={forum.isPrivate ? 'secondary' : 'primary'}
-                                        size="small"
-                                    />
-                                    <Chip
-                                        icon={<PersonIcon />}
-                                        label={forum.createdBy?.name || 'Unknown'}
-                                        variant="outlined"
-                                        size="small"
-                                    />
-                                </Box>
-                            </CardContent>
+            <List
+                loading={loading}
+                dataSource={topics}
+                renderItem={topic => (
+                    <List.Item>
+                        <Card
+                            style={{
+                                width: '100%',
+                                ...darkGlassStyle
+                            }}
+                            bodyStyle={{ padding: '16px' }}
+                            hoverable
+                            onClick={() => navigate(`/forum/topics/${topic._id}`)}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <Space align="center">
+                                        {topic.isSticky && <PushpinOutlined style={{ color: '#ff4d4f' }} />}
+                                        {topic.isClosed && <LockOutlined style={{ color: '#ff4d4f' }} />}
+                                        <Title
+                                            level={4}
+                                            style={{
+                                                color: '#fff',
+                                                margin: 0
+                                            }}
+                                        >
+                                            {topic.title}
+                                        </Title>
+                                    </Space>
+                                    <div style={{ marginTop: '8px' }}>
+                                        <Tag color={getCategoryColor(topic.category)}>
+                                            {topic.category}
+                                        </Tag>
+                                        <Text type="secondary" style={{ marginLeft: '8px' }}>
+                                            by {topic.createdBy?.name}
+                                        </Text>
+                                        <Text type="secondary" style={{ marginLeft: '8px' }}>
+                                            • {new Date(topic.createdAt).toLocaleDateString()}
+                                        </Text>
+                                    </div>
+                                </div>
+                                <Space size="large">
+                                    <Space>
+                                        <MessageOutlined />
+                                        <Text style={{ color: '#fff' }}>{topic.posts?.length || 0}</Text>
+                                    </Space>
+                                    <Space>
+                                        <EyeOutlined />
+                                        <Text style={{ color: '#fff' }}>{topic.views}</Text>
+                                    </Space>
+                                </Space>
+                            </div>
                         </Card>
-                    </Grid>
-                ))}
-                {forums.length === 0 && (
-                    <Grid item xs={12}>
-                        <Alert severity="info">
-                            No forums available. Create one to get started!
-                        </Alert>
-                    </Grid>
+                    </List.Item>
                 )}
-            </Grid>
+            />
 
-            <Dialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
-                maxWidth="sm"
-                fullWidth
+            <Modal
+                title="Create New Topic"
+                open={createModalVisible}
+                onCancel={() => {
+                    setCreateModalVisible(false);
+                    form.resetFields();
+                }}
+                footer={null}
+                style={{ top: 20 }}
             >
-                <DialogTitle>Create New Forum</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Forum Name"
-                        fullWidth
-                        value={newForum.name}
-                        onChange={(e) => setNewForum({ ...newForum, name: e.target.value })}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Description"
-                        fullWidth
-                        multiline
-                        rows={3}
-                        value={newForum.description}
-                        onChange={(e) => setNewForum({ ...newForum, description: e.target.value })}
-                        sx={{ mb: 2 }}
-                    />
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={newForum.isPrivate}
-                                onChange={(e) => setNewForum({ ...newForum, isPrivate: e.target.checked })}
-                            />
-                        }
-                        label="Private Forum"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-                    <Button
-                        onClick={handleCreateForum}
-                        variant="contained"
-                        disabled={!newForum.name.trim()}
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleCreateTopic}
+                >
+                    <Form.Item
+                        name="title"
+                        label="Title"
+                        rules={[{ required: true, message: 'Please enter a title' }]}
                     >
-                        Create
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="category"
+                        label="Category"
+                        rules={[{ required: true, message: 'Please select a category' }]}
+                    >
+                        <Select>
+                            <Option value="general">General Discussion</Option>
+                            <Option value="help">Help & Support</Option>
+                            <Option value="suggestions">Suggestions</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="description"
+                        label="Description"
+                        rules={[{ required: true, message: 'Please enter a description' }]}
+                    >
+                        <TextArea rows={4} />
+                    </Form.Item>
+
+                    <Form.Item>
+                        <Space>
+                            <Button type="primary" htmlType="submit">
+                                Create Topic
+                            </Button>
+                            <Button onClick={() => {
+                                setCreateModalVisible(false);
+                                form.resetFields();
+                            }}>
+                                Cancel
+                            </Button>
+                        </Space>
+                    </Form.Item>
+                </Form>
+            </Modal>
+        </div>
     );
-} 
+};
+
+export default ForumList; 
