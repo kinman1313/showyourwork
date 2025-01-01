@@ -41,9 +41,9 @@ export const resetPassword = (token, password) => api.post(`/auth/reset-password
 export const getCurrentUser = () => api.get('/auth/me');
 
 // Family endpoints
-export const getFamilyData = () => api.get('/family/me/family');
-export const generateInviteCode = () => api.post('/family/invite-code');
-export const joinFamily = (inviteCode) => api.post('/family/join', { inviteCode });
+export const getFamilyData = () => api.get('/api/family/me/family');
+export const generateInviteCode = () => api.post('/api/family/invite-code');
+export const joinFamily = (inviteCode) => api.post('/api/family/join', { inviteCode });
 
 // Chore endpoints
 export const getChores = () => api.get('/chores');
