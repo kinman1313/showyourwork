@@ -1,14 +1,14 @@
-const OpenAI = require('openai');
+const { OpenAI } = require('openai');
 const axios = require('axios');
 
-// Initialize OpenAI with error handling
+// Initialize OpenAI client
 let openai;
 try {
     openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
     });
 } catch (error) {
-    console.error('Error initializing OpenAI:', error);
+    console.error('Failed to initialize OpenAI client:', error);
 }
 
 // Generate chore suggestions based on user history and preferences
@@ -201,7 +201,6 @@ function calculateAverageTime(chores) {
 // Helper function to get weather data
 async function getWeatherData(location) {
     try {
-        // Replace with actual weather API call
         const response = await axios.get(`https://api.weatherapi.com/v1/forecast.json?key=${process.env.WEATHER_API_KEY}&q=${location}&days=7`);
         return response.data;
     } catch (error) {
@@ -220,8 +219,6 @@ function getWeatherAdjustment(chore, weatherData) {
         suggestedDate: null
     };
 
-    // Add weather-based adjustment logic here
-    // Example: Postpone outdoor chores if rain is forecasted
     if (isOutdoorChore(chore) && weatherData.forecast.includes('rain')) {
         adjustment.shouldPostpone = true;
         adjustment.reason = 'Rain forecasted';

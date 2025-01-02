@@ -3,79 +3,106 @@ const router = express.Router();
 const {
     generateChoreSuggestions,
     generateSmartSchedule,
-    checkWeatherAndAdjustSchedule,
-    rotateChores
+    adjustScheduleForWeather,
+    generateChoreRotation
 } = require('../services/smartFeatures');
 const auth = require('../middleware/auth');
+const { checkSubscription, checkFeatureAccess, trackUsage } = require('../middleware/subscription');
+const Chore = require('../models/Chore');
+const User = require('../models/User');
 
 // Get AI-powered chore suggestions
-router.get('/suggestions', auth, async (req, res) => {
-    try {
-        const userPreferences = req.user.preferences;
-        const completedChores = await Chore.find({
-            assignedTo: req.user._id,
-            status: 'completed'
-        });
+router.get('/suggestions',
+    auth,
+    checkSubscription,
+    checkFeatureAccess('smartFeaturesEnabled'),
+    trackUsage,
+    async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id).populate('familyId');
+            const completedChores = await Chore.find({
+                assignedTo: req.user._id,
+                status: { $in: ['completed', 'verified', 'resolved'] }
+            }).sort('-completedDate').limit(10);
 
-        const suggestions = await generateChoreSuggestions(userPreferences, completedChores);
-        res.json(suggestions);
-    } catch (error) {
-        console.error('Error getting chore suggestions:', error);
-        res.status(500).json({ error: 'Failed to generate chore suggestions' });
-    }
-});
+            const suggestions = await generateChoreSuggestions(user, completedChores);
+            res.json(suggestions);
+        } catch (error) {
+            console.error('Error getting chore suggestions:', error);
+            res.status(500).json({ error: 'Failed to generate chore suggestions' });
+        }
+    });
 
 // Generate smart schedule based on past performance
-router.get('/smart-schedule', auth, async (req, res) => {
-    try {
-        const choreHistory = await Chore.find({
-            assignedTo: req.user._id
-        }).sort('-completedAt');
+router.get('/smart-schedule',
+    auth,
+    checkSubscription,
+    checkFeatureAccess('smartFeaturesEnabled'),
+    trackUsage,
+    async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id);
+            const choreHistory = await Chore.find({
+                assignedTo: req.user._id,
+                status: { $in: ['completed', 'verified', 'resolved'] }
+            }).sort('-completedDate');
 
-        const schedule = await generateSmartSchedule(req.user._id, choreHistory);
-        res.json(schedule);
-    } catch (error) {
-        console.error('Error generating smart schedule:', error);
-        res.status(500).json({ error: 'Failed to generate smart schedule' });
-    }
-});
+            const schedule = await generateSmartSchedule(user, choreHistory);
+            res.json(schedule);
+        } catch (error) {
+            console.error('Error generating smart schedule:', error);
+            res.status(500).json({ error: 'Failed to generate smart schedule' });
+        }
+    });
 
 // Check weather and adjust outdoor chores
-router.post('/weather-adjust', auth, async (req, res) => {
-    try {
-        const { location } = req.body;
-        const outdoorChores = await Chore.find({
-            assignedTo: req.user._id,
-            isOutdoor: true,
-            status: 'pending'
-        });
+router.get('/weather-adjust',
+    auth,
+    checkSubscription,
+    checkFeatureAccess('smartFeaturesEnabled'),
+    trackUsage,
+    async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id);
+            const currentChores = await Chore.find({
+                assignedTo: req.user._id,
+                status: 'pending',
+                isOutdoor: true
+            });
 
-        const adjustedSchedule = await checkWeatherAndAdjustSchedule(location, outdoorChores);
-        res.json(adjustedSchedule);
-    } catch (error) {
-        console.error('Error adjusting schedule for weather:', error);
-        res.status(500).json({ error: 'Failed to adjust schedule for weather' });
-    }
-});
+            const adjustedSchedule = await adjustScheduleForWeather(user, currentChores);
+            res.json({ adjustedSchedule });
+        } catch (error) {
+            console.error('Error adjusting schedule for weather:', error);
+            res.status(500).json({ error: 'Failed to adjust schedule for weather' });
+        }
+    });
 
 // Rotate chores among family members
-router.post('/rotate', auth, async (req, res) => {
-    try {
-        const familyMembers = await User.find({
-            familyId: req.user.familyId
-        });
+router.get('/rotate',
+    auth,
+    checkSubscription,
+    checkFeatureAccess('smartFeaturesEnabled'),
+    trackUsage,
+    async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id);
+            const familyMembers = await User.find({
+                familyId: user.familyId,
+                role: 'child'
+            });
 
-        const chores = await Chore.find({
-            familyId: req.user.familyId,
-            status: 'active'
-        });
+            const currentChores = await Chore.find({
+                familyId: user.familyId,
+                status: 'pending'
+            });
 
-        const rotationSchedule = await rotateChores(familyMembers, chores);
-        res.json(rotationSchedule);
-    } catch (error) {
-        console.error('Error rotating chores:', error);
-        res.status(500).json({ error: 'Failed to rotate chores' });
-    }
-});
+            const rotationSuggestions = await generateChoreRotation(familyMembers, currentChores);
+            res.json({ rotationSuggestions });
+        } catch (error) {
+            console.error('Error rotating chores:', error);
+            res.status(500).json({ error: 'Failed to generate chore rotation' });
+        }
+    });
 
 module.exports = router; 
