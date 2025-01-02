@@ -1,27 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Family = require('../models/Family');
 const auth = require('../middleware/auth');
 const crypto = require('crypto');
 
 // Get family data for the current user
 router.get('/me/family', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate('familyId');
-        if (!user.familyId) {
+        const user = await User.findById(req.user.id).populate('familyId');
+        if (!user || !user.familyId) {
             return res.status(404).json({ error: 'No family found' });
         }
 
         const [parents, children] = await Promise.all([
-            User.find({ familyId: user.familyId, role: 'parent' }, 'name email'),
-            User.find({ familyId: user.familyId, role: 'child' }, 'name email')
+            User.find({ familyId: user.familyId._id, role: 'parent' }, 'name email'),
+            User.find({ familyId: user.familyId._id, role: 'child' }, 'name email')
         ]);
 
         res.json({
-            familyId: user.familyId,
+            familyId: user.familyId._id,
+            name: user.familyId.name,
             inviteCode: user.familyId.inviteCode,
             parents,
-            children
+            children,
+            settings: user.familyId.settings
         });
     } catch (error) {
         console.error('Get family error:', error);
@@ -36,8 +39,8 @@ router.post('/invite-code', auth, async (req, res) => {
             return res.status(403).json({ error: 'Only parents can generate invite codes' });
         }
 
-        const user = await User.findById(req.user._id).populate('familyId');
-        if (!user.familyId) {
+        const user = await User.findById(req.user.id).populate('familyId');
+        if (!user || !user.familyId) {
             return res.status(404).json({ error: 'No family found' });
         }
 
@@ -65,7 +68,11 @@ router.post('/join', auth, async (req, res) => {
             return res.status(404).json({ error: 'Invalid invite code' });
         }
 
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
         user.familyId = family._id;
         await user.save();
 
