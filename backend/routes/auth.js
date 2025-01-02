@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Family = require('../models/Family');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // Get current user's family data
 router.get('/me/family', auth, async (req, res) => {

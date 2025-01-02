@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Family = require('../models/Family');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const crypto = require('crypto');
 
 // Get family data for the current user
 router.get('/me/family', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate('familyId');
+        const user = await User.findById(req.user._id).populate('familyId');
         if (!user || !user.familyId) {
             return res.status(404).json({ error: 'No family found' });
         }
@@ -39,7 +39,7 @@ router.post('/invite-code', auth, async (req, res) => {
             return res.status(403).json({ error: 'Only parents can generate invite codes' });
         }
 
-        const user = await User.findById(req.user.id).populate('familyId');
+        const user = await User.findById(req.user._id).populate('familyId');
         if (!user || !user.familyId) {
             return res.status(404).json({ error: 'No family found' });
         }
@@ -68,7 +68,7 @@ router.post('/join', auth, async (req, res) => {
             return res.status(404).json({ error: 'Invalid invite code' });
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }

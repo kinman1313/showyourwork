@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
                 email,
                 password,
             });
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, userData);
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, userData);
             const { token, user } = response.data;
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));

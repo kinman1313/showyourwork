@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const { auth, checkSubscription, checkFeatureAccess, trackUsage } = require('../middleware/auth');
+const User = require('../models/User');
+const Chore = require('../models/Chore');
 const {
     generateChoreSuggestions,
     generateSmartSchedule,
     adjustScheduleForWeather,
     generateChoreRotation
 } = require('../services/smartFeatures');
-const auth = require('../middleware/auth');
-const { checkSubscription, checkFeatureAccess, trackUsage } = require('../middleware/subscription');
-const Chore = require('../models/Chore');
-const User = require('../models/User');
 
 // Get AI-powered chore suggestions
 router.get('/suggestions',

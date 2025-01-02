@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Savings Goal Schema
 const savingsGoalSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -38,6 +39,7 @@ const savingsGoalSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Transaction Schema
 const transactionSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -71,6 +73,7 @@ const transactionSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Lesson Progress Schema
 const lessonProgressSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -99,6 +102,7 @@ const lessonProgressSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Money Goal Schema
 const moneyGoalSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
