@@ -8,23 +8,34 @@ const savingsGoalSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     targetAmount: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     currentAmount: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
     deadline: {
-        type: Date
-    },
-    createdAt: {
         type: Date,
-        default: Date.now
+        required: true
+    },
+    category: {
+        type: String,
+        enum: ['savings', 'education', 'toys', 'charity', 'other'],
+        default: 'savings'
+    },
+    isCompleted: {
+        type: Boolean,
+        default: false
     }
+}, {
+    timestamps: true
 });
 
 const transactionSchema = new mongoose.Schema({
@@ -35,7 +46,7 @@ const transactionSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['earning', 'spending', 'saving'],
+        enum: ['income', 'expense', 'savings'],
         required: true
     },
     amount: {
@@ -44,20 +55,23 @@ const transactionSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     category: {
         type: String,
-        enum: ['chores', 'allowance', 'gift', 'other'],
-        required: true
+        required: true,
+        trim: true
     },
     date: {
         type: Date,
         default: Date.now
     }
+}, {
+    timestamps: true
 });
 
-const financialLessonProgressSchema = new mongoose.Schema({
+const lessonProgressSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -71,13 +85,18 @@ const financialLessonProgressSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    completedAt: {
-        type: Date
-    },
-    pointsEarned: {
+    score: {
         type: Number,
+        min: 0,
+        max: 100,
         default: 0
+    },
+    lastAttempt: {
+        type: Date,
+        default: Date.now
     }
+}, {
+    timestamps: true
 });
 
 const moneyGoalSchema = new mongoose.Schema({
@@ -88,30 +107,56 @@ const moneyGoalSchema = new mongoose.Schema({
     },
     weeklyAllowance: {
         type: Number,
-        default: 0
+        required: true,
+        min: 0
     },
     savingsPercentage: {
         type: Number,
-        default: 20
+        required: true,
+        min: 0,
+        max: 100
     },
     spendingPercentage: {
         type: Number,
-        default: 60
+        required: true,
+        min: 0,
+        max: 100
     },
     donationPercentage: {
         type: Number,
-        default: 20
+        required: true,
+        min: 0,
+        max: 100
     }
+}, {
+    timestamps: true
+});
+
+// Validate that percentages add up to 100
+moneyGoalSchema.pre('save', function (next) {
+    const total = this.savingsPercentage + this.spendingPercentage + this.donationPercentage;
+    if (total !== 100) {
+        next(new Error('Percentages must add up to 100'));
+    }
+    next();
+});
+
+// Update isCompleted when currentAmount reaches targetAmount
+savingsGoalSchema.pre('save', function (next) {
+    if (this.currentAmount >= this.targetAmount) {
+        this.isCompleted = true;
+    }
+    next();
 });
 
 const SavingsGoal = mongoose.model('SavingsGoal', savingsGoalSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
-const FinancialLessonProgress = mongoose.model('FinancialLessonProgress', financialLessonProgressSchema);
+const LessonProgress = mongoose.model('LessonProgress', lessonProgressSchema);
 const MoneyGoal = mongoose.model('MoneyGoal', moneyGoalSchema);
 
 module.exports = {
     SavingsGoal,
     Transaction,
-    FinancialLessonProgress,
+    LessonProgress,
     MoneyGoal
-}; 
+};
