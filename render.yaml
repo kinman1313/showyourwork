@@ -5,9 +5,9 @@ services:
     rootDirectory: backend
     repo:
       url: https://github.com/kinman1313/showyourwork
-      branch: feature/family-management
-    buildCommand: npm install
-    startCommand: node server.js
+      branch: feature/saas-implementation
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,7 +28,7 @@ services:
     name: showyourwork-frontend
     repo:
       url: https://github.com/kinman1313/showyourwork
-      branch: feature/family-management
+      branch: feature/saas-implementation
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/build
     envVars:
