@@ -14,7 +14,7 @@ import {
 } from '../../api';
 import { colors, cardStyles, buttonStyles, modalStyles, gradients } from '../../styles/theme';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const SmartFeatures = () => {
     const [loading, setLoading] = useState({
@@ -34,45 +34,6 @@ const SmartFeatures = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const [modalTitle, setModalTitle] = useState('');
-
-    const featureCards = [
-        {
-            icon: <BulbOutlined style={{ fontSize: '32px', color: colors.primary, filter: 'drop-shadow(0 0 10px rgba(24, 144, 255, 0.5))' }} />,
-            title: 'AI Suggestions',
-            description: 'Get personalized chore suggestions based on patterns and preferences.',
-            action: handleGetSuggestions,
-            loading: loading.suggestions,
-            buttonText: 'Suggestions',
-            gradient: gradients.primary
-        },
-        {
-            icon: <CalendarOutlined style={{ fontSize: '32px', color: colors.success, filter: 'drop-shadow(0 0 10px rgba(82, 196, 26, 0.5))' }} />,
-            title: 'Smart Schedule',
-            description: 'Generate an optimized schedule based on everyone\'s availability and preferences.',
-            action: handleGetSmartSchedule,
-            loading: loading.schedule,
-            buttonText: 'Generate Schedule',
-            gradient: gradients.success
-        },
-        {
-            icon: <CloudOutlined style={{ fontSize: '32px', color: colors.warning, filter: 'drop-shadow(0 0 10px rgba(250, 173, 20, 0.5))' }} />,
-            title: 'Weather Aware',
-            description: 'Automatically adjust outdoor chores based on weather conditions.',
-            action: handleWeatherAdjust,
-            loading: loading.weather,
-            buttonText: 'Check Weather',
-            gradient: gradients.warning
-        },
-        {
-            icon: <SwapOutlined style={{ fontSize: '32px', color: colors.danger, filter: 'drop-shadow(0 0 10px rgba(255, 77, 79, 0.5))' }} />,
-            title: 'Chore Rotation',
-            description: 'Automatically rotate chores among family members for fairness.',
-            action: handleRotateChores,
-            loading: loading.rotation,
-            buttonText: 'Rotate Chores',
-            gradient: gradients.danger
-        }
-    ];
 
     const showResults = (title, content) => {
         setModalTitle(title);
@@ -132,14 +93,6 @@ const SmartFeatures = () => {
                                 </List.Item>
                             )}
                         />
-                    </div>
-                    <div>
-                        <Text strong style={{ color: '#fff' }}>Average Duration:</Text>
-                        <Text style={{ color: '#fff' }}> {response.data.estimatedDuration} minutes</Text>
-                    </div>
-                    <div>
-                        <Text strong style={{ color: '#fff' }}>Success Rate:</Text>
-                        <Text style={{ color: '#fff' }}> {response.data.successRate}%</Text>
                     </div>
                 </Space>
             ));
@@ -213,6 +166,45 @@ const SmartFeatures = () => {
         }
     };
 
+    const featureCards = [
+        {
+            icon: <BulbOutlined style={{ fontSize: '32px', color: colors.primary, filter: 'drop-shadow(0 0 10px rgba(24, 144, 255, 0.5))' }} />,
+            title: 'AI Suggestions',
+            description: 'Get personalized chore suggestions based on patterns and preferences.',
+            action: handleGetSuggestions,
+            loading: loading.suggestions,
+            buttonText: 'Suggestions',
+            gradient: gradients.primary
+        },
+        {
+            icon: <CalendarOutlined style={{ fontSize: '32px', color: colors.success, filter: 'drop-shadow(0 0 10px rgba(82, 196, 26, 0.5))' }} />,
+            title: 'Smart Schedule',
+            description: 'Generate an optimized schedule based on everyone\'s availability and preferences.',
+            action: handleGetSmartSchedule,
+            loading: loading.schedule,
+            buttonText: 'Generate Schedule',
+            gradient: gradients.success
+        },
+        {
+            icon: <CloudOutlined style={{ fontSize: '32px', color: colors.warning, filter: 'drop-shadow(0 0 10px rgba(250, 173, 20, 0.5))' }} />,
+            title: 'Weather Aware',
+            description: 'Automatically adjust outdoor chores based on weather conditions.',
+            action: handleWeatherAdjust,
+            loading: loading.weather,
+            buttonText: 'Check Weather',
+            gradient: gradients.warning
+        },
+        {
+            icon: <SwapOutlined style={{ fontSize: '32px', color: colors.danger, filter: 'drop-shadow(0 0 10px rgba(255, 77, 79, 0.5))' }} />,
+            title: 'Chore Rotation',
+            description: 'Automatically rotate chores among family members for fairness.',
+            action: handleRotateChores,
+            loading: loading.rotation,
+            buttonText: 'Rotate Chores',
+            gradient: gradients.danger
+        }
+    ];
+
     return (
         <div className="smart-features">
             <Title level={2} style={{
@@ -248,41 +240,25 @@ const SmartFeatures = () => {
                                     marginBottom: '16px',
                                     padding: '16px',
                                     background: card.gradient,
-                                    borderRadius: '50%',
-                                    width: '64px',
-                                    height: '64px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '0 auto'
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                                 }}>
                                     {card.icon}
                                 </div>
-                                <Title level={4} style={{
-                                    color: colors.text.primary,
-                                    margin: '0',
-                                    textAlign: 'center',
-                                    fontSize: '1.5rem'
-                                }}>
+                                <Title level={4} style={{ color: colors.text.primary, margin: 0 }}>
                                     {card.title}
                                 </Title>
-                                <Paragraph style={{
-                                    color: colors.text.secondary,
-                                    textAlign: 'center',
-                                    fontSize: '1rem',
-                                    flex: 1
-                                }}>
+                                <Text style={{ color: colors.text.secondary, flex: 1 }}>
                                     {card.description}
-                                </Paragraph>
+                                </Text>
                                 <Button
                                     type="primary"
                                     onClick={card.action}
                                     loading={card.loading}
                                     style={{
                                         ...buttonStyles,
-                                        width: '100%',
                                         background: card.gradient,
-                                        border: 'none'
+                                        width: '100%'
                                     }}
                                 >
                                     {card.buttonText}
@@ -294,16 +270,11 @@ const SmartFeatures = () => {
             </Row>
 
             <Modal
-                title={<Text style={{ color: colors.text.primary }}>{modalTitle}</Text>}
+                title={modalTitle}
                 open={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 footer={null}
-                style={{ top: 20 }}
-                bodyStyle={{
-                    ...modalStyles.content,
-                    background: `linear-gradient(135deg, ${colors.background.glass} 0%, ${colors.background.dark} 100%)`
-                }}
-                width={800}
+                style={modalStyles}
             >
                 {modalContent}
             </Modal>
