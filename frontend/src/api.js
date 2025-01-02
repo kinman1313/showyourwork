@@ -60,10 +60,10 @@ export const getChildren = () => api.get('/users/children');
 export const getPoints = () => api.get('/users/points');
 
 // Smart features endpoints
-export const getChoreSuggestions = () => api.get('/smart/suggestions');
-export const getSmartSchedule = () => api.get('/smart/smart-schedule');
-export const adjustWeatherSchedule = (location) => api.post('/smart/weather-adjust', { location });
-export const rotateChores = () => api.post('/smart/rotate');
+export const getChoreSuggestions = () => api.get('/api/smart/suggestions');
+export const getSmartSchedule = () => api.get('/api/smart/smart-schedule');
+export const adjustWeatherSchedule = (location) => api.post('/api/smart/weather-adjust', { location });
+export const rotateChores = () => api.post('/api/smart/rotate');
 
 // Money Management endpoints
 export const getSavingsGoals = () => api.get('/money/savings-goals');
