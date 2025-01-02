@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 // Savings Goal Schema
+
+
 const savingsGoalSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,

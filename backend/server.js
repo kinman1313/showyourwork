@@ -3,7 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const connectDB = require('./config/db');
-const smartFeaturesRoutes = require('./routes/smartFeatures');
+const smartFeaturesRoutes = require('./routes/smart');
 const familyRoutes = require('./routes/family');
 const moneyManagementRoutes = require('./routes/moneyManagement');
 const forumRoutes = require('./routes/forum');
