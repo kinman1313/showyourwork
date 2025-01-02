@@ -15,7 +15,8 @@ const app = express();
 app.use(cors({
     origin: 'https://showyourwork-frontend.onrender.com',
     methods: 'GET,PUT,POST,DELETE,OPTIONS',
-    allowedHeaders: '*'
+    allowedHeaders: '*',
+    credentials: true
 }));
 
 // Body parser middleware
@@ -68,7 +69,7 @@ app.get('/forums', (req, res) => {
     res.json(forums);
 });
 
-// Routes
+// Mount all routes under /api
 app.use('/api/auth', authRoutes);
 app.use('/api/family', familyRoutes);
 app.use('/api/smart', smartFeaturesRoutes);
