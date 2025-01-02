@@ -3,7 +3,31 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Family = require('../models/Family');
 const auth = require('../middleware/auth');
+
+// Get current user's family data
+router.get('/me/family', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).populate('familyId');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!user.familyId) {
+            return res.json({ message: 'User is not part of a family' });
+        }
+
+        const family = await Family.findById(user.familyId)
+            .populate('members', 'name email role points')
+            .populate('parent', 'name email');
+
+        res.json(family);
+    } catch (error) {
+        console.error('Get family data error:', error);
+        res.status(500).json({ error: 'Failed to fetch family data' });
+    }
+});
 
 // Get current user
 router.get('/me', auth, async (req, res) => {

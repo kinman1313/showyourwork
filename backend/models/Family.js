@@ -6,37 +6,46 @@ const familySchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    parent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     inviteCode: {
         type: String,
         unique: true,
         sparse: true
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
     settings: {
-        allowMultipleParents: {
-            type: Boolean,
-            default: true
-        },
-        choreRotationEnabled: {
+        allowChildChoreCreation: {
             type: Boolean,
             default: false
         },
-        pointsEnabled: {
+        requireParentVerification: {
             type: Boolean,
             default: true
+        },
+        pointsPerChore: {
+            type: Number,
+            default: 10
+        },
+        bonusPoints: {
+            type: Number,
+            default: 5
         }
     }
 }, {
     timestamps: true
 });
 
-// Generate invite code before saving if one doesn't exist
-familySchema.pre('save', function (next) {
+// Generate a random invite code before saving if one doesn't exist
+familySchema.pre('save', async function (next) {
     if (!this.inviteCode) {
-        this.inviteCode = require('crypto').randomBytes(4).toString('hex').toUpperCase();
+        this.inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     }
     next();
 });
