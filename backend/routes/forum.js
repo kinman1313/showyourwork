@@ -1,39 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { ForumTopic, ForumPost } = require('../models/Forum');
+const Forum = require('../models/Forum');
+const User = require('../models/User');
 
 // Get all topics
-router.get('/topics', async (req, res) => {
+router.get('/topics', auth, async (req, res) => {
     try {
-        const topics = await ForumTopic.find()
+        const topics = await Forum.find()
             .populate('createdBy', 'name')
-            .sort({ isSticky: -1, lastActivity: -1 });
+            .sort({ createdAt: -1 });
         res.json(topics);
     } catch (error) {
-        console.error('Error fetching topics:', error);
+        console.error('Get topics error:', error);
         res.status(500).json({ error: 'Failed to fetch topics' });
     }
 });
 
-// Get single topic with posts
-router.get('/topics/:id', async (req, res) => {
+// Get single topic
+router.get('/topics/:id', auth, async (req, res) => {
     try {
-        const topic = await ForumTopic.findById(req.params.id)
+        const topic = await Forum.findById(req.params.id)
             .populate('createdBy', 'name')
-            .populate('posts.userId', 'name');
-
+            .populate('posts.user', 'name');
         if (!topic) {
             return res.status(404).json({ error: 'Topic not found' });
         }
-
-        // Increment view count
-        topic.views += 1;
-        await topic.save();
-
         res.json(topic);
     } catch (error) {
-        console.error('Error fetching topic:', error);
+        console.error('Get topic error:', error);
         res.status(500).json({ error: 'Failed to fetch topic' });
     }
 });
@@ -41,19 +36,16 @@ router.get('/topics/:id', async (req, res) => {
 // Create new topic
 router.post('/topics', auth, async (req, res) => {
     try {
-        const { title, description, category } = req.body;
-        const topic = new ForumTopic({
+        const { title, content } = req.body;
+        const topic = new Forum({
             title,
-            description,
-            category,
-            createdBy: req.user._id
+            content,
+            createdBy: req.user.id
         });
         await topic.save();
-
-        const populatedTopic = await topic.populate('createdBy', 'name');
-        res.status(201).json(populatedTopic);
+        res.status(201).json(topic);
     } catch (error) {
-        console.error('Error creating topic:', error);
+        console.error('Create topic error:', error);
         res.status(500).json({ error: 'Failed to create topic' });
     }
 });
@@ -61,31 +53,21 @@ router.post('/topics', auth, async (req, res) => {
 // Add post to topic
 router.post('/topics/:id/posts', auth, async (req, res) => {
     try {
-        const topic = await ForumTopic.findById(req.params.id);
+        const topic = await Forum.findById(req.params.id);
         if (!topic) {
             return res.status(404).json({ error: 'Topic not found' });
         }
 
-        if (topic.isClosed) {
-            return res.status(403).json({ error: 'This topic is closed' });
-        }
+        const { content } = req.body;
+        topic.posts.push({
+            content,
+            user: req.user.id
+        });
 
-        const post = {
-            userId: req.user._id,
-            content: req.body.content
-        };
-
-        topic.posts.push(post);
-        topic.lastActivity = new Date();
         await topic.save();
-
-        const updatedTopic = await ForumTopic.findById(req.params.id)
-            .populate('createdBy', 'name')
-            .populate('posts.userId', 'name');
-
-        res.status(201).json(updatedTopic);
+        res.status(201).json(topic);
     } catch (error) {
-        console.error('Error adding post:', error);
+        console.error('Add post error:', error);
         res.status(500).json({ error: 'Failed to add post' });
     }
 });
@@ -93,7 +75,7 @@ router.post('/topics/:id/posts', auth, async (req, res) => {
 // Update post
 router.patch('/topics/:topicId/posts/:postId', auth, async (req, res) => {
     try {
-        const topic = await ForumTopic.findById(req.params.topicId);
+        const topic = await Forum.findById(req.params.topicId);
         if (!topic) {
             return res.status(404).json({ error: 'Topic not found' });
         }
@@ -103,21 +85,15 @@ router.patch('/topics/:topicId/posts/:postId', auth, async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        if (post.userId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ error: 'Not authorized to edit this post' });
+        if (post.user.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
         }
 
         post.content = req.body.content;
-        post.updatedAt = new Date();
         await topic.save();
-
-        const updatedTopic = await ForumTopic.findById(req.params.topicId)
-            .populate('createdBy', 'name')
-            .populate('posts.userId', 'name');
-
-        res.json(updatedTopic);
+        res.json(topic);
     } catch (error) {
-        console.error('Error updating post:', error);
+        console.error('Update post error:', error);
         res.status(500).json({ error: 'Failed to update post' });
     }
 });
@@ -125,7 +101,7 @@ router.patch('/topics/:topicId/posts/:postId', auth, async (req, res) => {
 // Delete post
 router.delete('/topics/:topicId/posts/:postId', auth, async (req, res) => {
     try {
-        const topic = await ForumTopic.findById(req.params.topicId);
+        const topic = await Forum.findById(req.params.topicId);
         if (!topic) {
             return res.status(404).json({ error: 'Topic not found' });
         }
@@ -135,64 +111,16 @@ router.delete('/topics/:topicId/posts/:postId', auth, async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        if (post.userId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ error: 'Not authorized to delete this post' });
+        if (post.user.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
         }
 
         post.remove();
         await topic.save();
-
-        res.json({ message: 'Post deleted successfully' });
+        res.json({ message: 'Post deleted' });
     } catch (error) {
-        console.error('Error deleting post:', error);
+        console.error('Delete post error:', error);
         res.status(500).json({ error: 'Failed to delete post' });
-    }
-});
-
-// Like/Unlike post
-router.post('/topics/:topicId/posts/:postId/like', auth, async (req, res) => {
-    try {
-        const topic = await ForumTopic.findById(req.params.topicId);
-        if (!topic) {
-            return res.status(404).json({ error: 'Topic not found' });
-        }
-
-        const post = topic.posts.id(req.params.postId);
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-
-        const userLikeIndex = post.likes.indexOf(req.user._id);
-        if (userLikeIndex === -1) {
-            post.likes.push(req.user._id);
-        } else {
-            post.likes.splice(userLikeIndex, 1);
-        }
-
-        await topic.save();
-        res.json({ likes: post.likes.length });
-    } catch (error) {
-        console.error('Error updating post likes:', error);
-        res.status(500).json({ error: 'Failed to update likes' });
-    }
-});
-
-// Close/Reopen topic (admin only)
-router.patch('/topics/:id/status', auth, async (req, res) => {
-    try {
-        const topic = await ForumTopic.findById(req.params.id);
-        if (!topic) {
-            return res.status(404).json({ error: 'Topic not found' });
-        }
-
-        // TODO: Add admin check here
-        topic.isClosed = req.body.isClosed;
-        await topic.save();
-
-        res.json(topic);
-    } catch (error) {
-        console.error('Error updating topic status:', error);
-        res.status(500).json({ error: 'Failed to update topic status' });
     }
 });
 

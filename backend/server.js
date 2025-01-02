@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 require('dotenv').config();
+const connectDB = require('./config/db');
 const smartFeaturesRoutes = require('./routes/smartFeatures');
 const familyRoutes = require('./routes/family');
 const moneyManagementRoutes = require('./routes/moneyManagement');
@@ -10,6 +10,9 @@ const forumRoutes = require('./routes/forum');
 const authRoutes = require('./routes/auth');
 
 const app = express();
+
+// Connect to MongoDB
+connectDB();
 
 // CORS configuration
 const corsOptions = {

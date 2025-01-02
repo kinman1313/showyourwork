@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
-const forumPostSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
+const postSchema = new mongoose.Schema({
     content: {
         type: String,
+        required: true
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: true
     },
     likes: [{
@@ -24,58 +24,49 @@ const forumPostSchema = new mongoose.Schema({
     }
 });
 
-const forumTopicSchema = new mongoose.Schema({
+const forumSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
-    description: {
+    content: {
         type: String,
         required: true
-    },
-    category: {
-        type: String,
-        enum: ['general', 'help', 'suggestions', 'announcements'],
-        default: 'general'
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    posts: [forumPostSchema],
+    posts: [postSchema],
     views: {
         type: Number,
         default: 0
-    },
-    isSticky: {
-        type: Boolean,
-        default: false
     },
     isClosed: {
         type: Boolean,
         default: false
     },
-    lastActivity: {
-        type: Date,
-        default: Date.now
+    isSticky: {
+        type: Boolean,
+        default: false
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
+    category: {
+        type: String,
+        enum: ['general', 'help', 'suggestions', 'announcements'],
+        default: 'general'
     }
+}, {
+    timestamps: true
 });
 
-// Add middleware to update lastActivity
-forumTopicSchema.pre('save', function (next) {
-    this.lastActivity = new Date();
+// Update updatedAt timestamp before saving
+postSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
     next();
 });
 
-const ForumTopic = mongoose.model('ForumTopic', forumTopicSchema);
-const ForumPost = mongoose.model('ForumPost', forumPostSchema);
+const Forum = mongoose.model('Forum', forumSchema);
 
-module.exports = {
-    ForumTopic,
-    ForumPost
-}; 
+module.exports = Forum; 
