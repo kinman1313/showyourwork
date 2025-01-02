@@ -5,8 +5,8 @@ services:
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/family-management
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
