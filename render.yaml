@@ -2,11 +2,12 @@ services:
   - type: web
     name: showyourwork-backend
     env: node
+    rootDirectory: backend
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/family-management
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && node server.js
+    buildCommand: npm install
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
