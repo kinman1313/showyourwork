@@ -10,39 +10,14 @@ require('dotenv').config();
 
 const app = express();
 
-// Test endpoint for health check
-app.get('/test-env', (req, res) => {
-    res.json({
-        message: 'Server is running',
-        timestamp: new Date().toISOString()
-    });
-});
-
 // CORS configuration
-const corsOptions = {
-    origin: function (origin, callback) {
-        console.log('Request origin:', origin);
-        console.log('Allowed origins:', process.env.NODE_ENV === 'production' ? [process.env.FRONTEND_URL] : ['http://localhost:3000']);
-
-        if (process.env.NODE_ENV === 'production') {
-            if (!origin || process.env.FRONTEND_URL.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        } else {
-            callback(null, true);
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
 app.use(cors({
-    origin: 'https://showyourwork-frontend.onrender.com',
+    origin: process.env.FRONTEND_URL || 'https://showyourwork-frontend.onrender.com',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 // Request logging middleware
@@ -53,6 +28,20 @@ app.use((req, res, next) => {
         console.log('Body:', req.body);
     }
     next();
+});
+
+// Add API prefix middleware
+app.use('/api', (req, res, next) => {
+    console.log(`API Request: ${req.method} ${req.url}`);
+    next();
+});
+
+// Test endpoint for health check
+app.get('/api/test-env', (req, res) => {
+    res.json({
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Root endpoint
@@ -164,7 +153,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Auth Routes
-app.post('/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, role, name, parentEmail } = req.body;
 
@@ -205,7 +194,7 @@ app.post('/auth/register', async (req, res) => {
     }
 });
 
-app.post('/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
@@ -225,7 +214,7 @@ app.post('/auth/login', async (req, res) => {
     }
 });
 
-app.post('/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -253,7 +242,7 @@ app.post('/auth/forgot-password', async (req, res) => {
     }
 });
 
-app.post('/auth/reset-password', async (req, res) => {
+app.post('/api/auth/reset-password', async (req, res) => {
     try {
         const { token, newPassword } = req.body;
         const user = await User.findOne({
@@ -278,7 +267,7 @@ app.post('/auth/reset-password', async (req, res) => {
 });
 
 // Chore Routes
-app.post('/chores', (req, res, next) => {
+app.post('/api/chores', (req, res, next) => {
     console.log('Received request to /chores:', {
         method: req.method,
         headers: req.headers,
@@ -368,7 +357,7 @@ app.post('/chores', (req, res, next) => {
     }
 });
 
-app.get('/chores', auth, async (req, res) => {
+app.get('/api/chores', auth, async (req, res) => {
     try {
         if (req.user.role !== 'parent') {
             return res.status(403).json({ error: 'Only parents can view all chores' });
@@ -381,7 +370,7 @@ app.get('/chores', auth, async (req, res) => {
     }
 });
 
-app.get('/chores/assigned', auth, async (req, res) => {
+app.get('/api/chores/assigned', auth, async (req, res) => {
     try {
         if (req.user.role !== 'child') {
             return res.status(403).json({ error: 'Only children can view assigned chores' });
@@ -394,7 +383,7 @@ app.get('/chores/assigned', auth, async (req, res) => {
     }
 });
 
-app.patch('/chores/:id/complete', auth, async (req, res) => {
+app.patch('/api/chores/:id/complete', auth, async (req, res) => {
     try {
         if (req.user.role !== 'child') {
             return res.status(403).json({ error: 'Only children can complete chores' });
@@ -426,7 +415,7 @@ app.patch('/chores/:id/complete', auth, async (req, res) => {
     }
 });
 
-app.patch('/chores/:id/status', auth, async (req, res) => {
+app.patch('/api/chores/:id/status', auth, async (req, res) => {
     try {
         const { status } = req.body;
         const validTransitions = {
@@ -487,7 +476,7 @@ app.patch('/chores/:id/status', auth, async (req, res) => {
     }
 });
 
-app.get('/users/children', auth, async (req, res) => {
+app.get('/api/users/children', auth, async (req, res) => {
     try {
         if (req.user.role !== 'parent') {
             return res.status(403).json({ error: 'Only parents can view children' });
@@ -499,7 +488,7 @@ app.get('/users/children', auth, async (req, res) => {
     }
 });
 
-app.get('/users/points', auth, async (req, res) => {
+app.get('/api/users/points', auth, async (req, res) => {
     try {
         if (req.user.role !== 'child') {
             return res.status(403).json({ error: 'Only children can view their points' });
@@ -518,7 +507,7 @@ app.get('/users/points', auth, async (req, res) => {
 });
 
 // Update a chore
-app.put('/chores/:id', auth, async (req, res) => {
+app.put('/api/chores/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const { title, description, points, assignedTo, dueDate } = req.body;
@@ -552,7 +541,7 @@ app.put('/chores/:id', auth, async (req, res) => {
 });
 
 // Delete a chore
-app.delete('/chores/:id', auth, async (req, res) => {
+app.delete('/api/chores/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -575,7 +564,7 @@ app.delete('/chores/:id', auth, async (req, res) => {
 });
 
 // Forum Routes
-app.post('/forums', auth, async (req, res) => {
+app.post('/api/forums', auth, async (req, res) => {
     try {
         const { name, description, isPrivate, allowedRoles } = req.body;
 
@@ -596,7 +585,7 @@ app.post('/forums', auth, async (req, res) => {
     }
 });
 
-app.get('/forums', auth, async (req, res) => {
+app.get('/api/forums', auth, async (req, res) => {
     try {
         const forums = await Forum.find({
             $or: [
@@ -612,7 +601,7 @@ app.get('/forums', auth, async (req, res) => {
 });
 
 // Topic Routes
-app.post('/forums/:forumId/topics', auth, async (req, res) => {
+app.post('/api/forums/:forumId/topics', auth, async (req, res) => {
     try {
         const { title, content, tags } = req.body;
         const { forumId } = req.params;
@@ -645,7 +634,7 @@ app.post('/forums/:forumId/topics', auth, async (req, res) => {
     }
 });
 
-app.get('/forums/:forumId/topics', auth, async (req, res) => {
+app.get('/api/forums/:forumId/topics', auth, async (req, res) => {
     try {
         const { forumId } = req.params;
         const { sort = '-createdAt' } = req.query;
@@ -673,7 +662,7 @@ app.get('/forums/:forumId/topics', auth, async (req, res) => {
 });
 
 // Comment Routes
-app.post('/topics/:topicId/comments', auth, async (req, res) => {
+app.post('/api/topics/:topicId/comments', auth, async (req, res) => {
     try {
         const { content, parentCommentId } = req.body;
         const { topicId } = req.params;
@@ -705,7 +694,7 @@ app.post('/topics/:topicId/comments', auth, async (req, res) => {
     }
 });
 
-app.get('/topics/:topicId/comments', auth, async (req, res) => {
+app.get('/api/topics/:topicId/comments', auth, async (req, res) => {
     try {
         const { topicId } = req.params;
 
@@ -733,7 +722,7 @@ app.get('/topics/:topicId/comments', auth, async (req, res) => {
 });
 
 // Like/Unlike Routes
-app.post('/topics/:topicId/like', auth, async (req, res) => {
+app.post('/api/topics/:topicId/like', auth, async (req, res) => {
     try {
         const topic = await Topic.findById(req.params.topicId);
         if (!topic) {
@@ -754,7 +743,7 @@ app.post('/topics/:topicId/like', auth, async (req, res) => {
     }
 });
 
-app.post('/comments/:commentId/like', auth, async (req, res) => {
+app.post('/api/comments/:commentId/like', auth, async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
         if (!comment) {
@@ -776,7 +765,7 @@ app.post('/comments/:commentId/like', auth, async (req, res) => {
 });
 
 // Leaderboard endpoint
-app.get('/users/leaderboard', auth, async (req, res) => {
+app.get('/api/users/leaderboard', auth, async (req, res) => {
     try {
         const users = await User.find({ role: 'child' })
             .select('name points')
@@ -790,7 +779,7 @@ app.get('/users/leaderboard', auth, async (req, res) => {
 });
 
 // Calendar endpoint
-app.get('/chores/calendar', auth, async (req, res) => {
+app.get('/api/chores/calendar', auth, async (req, res) => {
     try {
         const { month, year } = req.query;
         const startDate = new Date(year, month - 1, 1);
@@ -819,7 +808,7 @@ app.get('/chores/calendar', auth, async (req, res) => {
 });
 
 // Add route for resolving chores
-app.patch('/chores/:id/resolve', auth, async (req, res) => {
+app.patch('/api/chores/:id/resolve', auth, async (req, res) => {
     try {
         const chore = await Chore.findById(req.params.id);
         if (!chore) {
@@ -930,6 +919,31 @@ app.get('/api/smart/rotate', auth, async (req, res) => {
     } catch (error) {
         console.error('Chore rotation error:', error);
         res.status(500).json({ error: 'Failed to generate chore rotation' });
+    }
+});
+
+// Add Family Route
+app.get('/api/auth/me/family', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate('familyId');
+        if (!user || !user.familyId) {
+            return res.status(404).json({ error: 'No family found' });
+        }
+
+        const [parents, children] = await Promise.all([
+            User.find({ familyId: user.familyId, role: 'parent' }, 'name email'),
+            User.find({ familyId: user.familyId, role: 'child' }, 'name email')
+        ]);
+
+        res.json({
+            familyId: user.familyId._id,
+            name: user.familyId.name,
+            parents,
+            children
+        });
+    } catch (error) {
+        console.error('Get family error:', error);
+        res.status(500).json({ error: 'Failed to fetch family data' });
     }
 });
 

@@ -1,13 +1,22 @@
 const OpenAI = require('openai');
 const axios = require('axios');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize OpenAI with error handling
+let openai;
+try {
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    });
+} catch (error) {
+    console.error('Error initializing OpenAI:', error);
+}
 
 // Generate chore suggestions based on user history and preferences
 async function generateChoreSuggestions(user, completedChores) {
+    if (!openai) {
+        throw new Error('OpenAI client not initialized');
+    }
+
     try {
         const choreHistory = completedChores.map(chore => ({
             title: chore.title,
@@ -17,7 +26,7 @@ async function generateChoreSuggestions(user, completedChores) {
 
         const prompt = `Based on this user's chore history: ${JSON.stringify(choreHistory)}, 
             suggest 5 age-appropriate household chores that would be suitable for their next tasks. 
-            Consider the complexity and points of previously completed chores.`;
+            Consider the complexity and points of previously completed chores. Format the response as a JSON array of strings.`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
@@ -35,7 +44,14 @@ async function generateChoreSuggestions(user, completedChores) {
             max_tokens: 200
         });
 
-        return completion.choices[0].message.content.split('\n');
+        let suggestions;
+        try {
+            suggestions = JSON.parse(completion.choices[0].message.content);
+        } catch (parseError) {
+            suggestions = completion.choices[0].message.content.split('\n').filter(Boolean);
+        }
+
+        return { suggestions };
     } catch (error) {
         console.error('Error generating suggestions:', error);
         throw new Error('Failed to generate chore suggestions');
@@ -64,7 +80,7 @@ async function generateSmartSchedule(user, choreHistory) {
             });
         });
 
-        return schedule;
+        return { schedule };
     } catch (error) {
         console.error('Error generating schedule:', error);
         throw new Error('Failed to generate smart schedule');
