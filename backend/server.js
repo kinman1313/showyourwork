@@ -7,6 +7,7 @@ const smartFeaturesRoutes = require('./routes/smartFeatures');
 const familyRoutes = require('./routes/family');
 const moneyManagementRoutes = require('./routes/moneyManagement');
 const forumRoutes = require('./routes/forum');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
