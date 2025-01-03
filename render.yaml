@@ -6,7 +6,7 @@ services:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/saas-implementation
     buildCommand: cd backend && npm install
-    startCommand: cd backend && node server.js
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
