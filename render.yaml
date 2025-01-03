@@ -2,12 +2,11 @@ services:
   - type: web
     name: showyourwork-backend
     env: node
-    rootDirectory: backend
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/saas-implementation
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,12 +25,11 @@ services:
 
   - type: static
     name: showyourwork-frontend
-    rootDirectory: frontend
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/saas-implementation
-    buildCommand: npm install && npm run build
-    publishPath: build
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
         sync: false
