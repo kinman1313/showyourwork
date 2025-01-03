@@ -5,8 +5,8 @@ services:
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/saas-implementation
-    buildCommand: cd backend && npm install
-    startCommand: node server.js
+    buildCommand: npm install --prefix backend
+    startCommand: npm start --prefix backend
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,7 +28,7 @@ services:
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/saas-implementation
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: npm install --prefix frontend && npm run build --prefix frontend
     publishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
