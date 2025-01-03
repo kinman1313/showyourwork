@@ -20,6 +20,15 @@ const familySchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
+    subscription: {
+        type: String,
+        enum: ['free', 'premium'],
+        default: 'free'
+    },
+    featureUsage: [{
+        date: String,
+        count: Number
+    }],
     settings: {
         allowChildChoreCreation: {
             type: Boolean,
@@ -36,6 +45,10 @@ const familySchema = new mongoose.Schema({
         bonusPoints: {
             type: Number,
             default: 5
+        },
+        smartFeaturesEnabled: {
+            type: Boolean,
+            default: false
         }
     }
 }, {

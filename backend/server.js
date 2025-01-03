@@ -3,7 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const connectDB = require('./config/db');
-const smartFeaturesRoutes = require('./routes/smartFeatures');
+const smartRoutes = require('./routes/smart');
 const familyRoutes = require('./routes/family');
 const moneyManagementRoutes = require('./routes/moneyManagement');
 const forumRoutes = require('./routes/forum');
@@ -48,7 +48,7 @@ app.get('/api/test-env', (req, res) => {
 // Mount feature routes
 app.use('/api/auth', authRoutes);
 app.use('/api/family', familyRoutes);
-app.use('/api/smart', smartFeaturesRoutes);
+app.use('/api/smart', smartRoutes);
 app.use('/api/money', moneyManagementRoutes);
 app.use('/api/forum', forumRoutes);
 

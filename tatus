@@ -1,0 +1,27 @@
+[1mdiff --git a/render.yaml b/render.yaml[m
+[1mindex 1546574..9ecce62 100644[m
+[1m--- a/render.yaml[m
+[1m+++ b/render.yaml[m
+[36m@@ -2,6 +2,7 @@[m [mservices:[m
+   - type: web[m
+     name: showyourwork-backend[m
+     env: node[m
+[32m+[m[32m    rootDirectory: backend[m
+     repo:[m
+       url: https://github.com/kinman1313/showyourwork[m
+       branch: feature/family-management[m
+[36m@@ -25,11 +26,12 @@[m [mservices:[m
+ [m
+   - type: static[m
+     name: showyourwork-frontend[m
+[32m+[m[32m    rootDirectory: frontend[m
+     repo:[m
+       url: https://github.com/kinman1313/showyourwork[m
+       branch: feature/family-management[m
+[31m-    buildCommand: cd frontend && npm install && npm run build[m
+[31m-    publishPath: frontend/build[m
+[32m+[m[32m    buildCommand: npm install && npm run build[m
+[32m+[m[32m    publishPath: build[m
+     envVars:[m
+       - key: REACT_APP_API_URL[m
+         sync: false[m

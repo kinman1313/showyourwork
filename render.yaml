@@ -2,6 +2,7 @@ services:
   - type: web
     name: showyourwork-backend
     env: node
+    rootDirectory: backend
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/family-management
@@ -25,11 +26,12 @@ services:
 
   - type: static
     name: showyourwork-frontend
+    rootDirectory: frontend
     repo:
       url: https://github.com/kinman1313/showyourwork
       branch: feature/family-management
-    buildCommand: cd frontend && npm install && npm run build
-    publishPath: frontend/build
+    buildCommand: npm install && npm run build
+    publishPath: build
     envVars:
       - key: REACT_APP_API_URL
         sync: false
